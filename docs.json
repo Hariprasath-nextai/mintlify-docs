@@ -1,68 +1,123 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Mint Starter Kit",
+  "name": "NextEVI Documentation",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#7C3AED",
+    "light": "#A855F7",
+    "dark": "#5B21B6"
   },
   "favicon": "/favicon.svg",
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Introduction",
         "groups": [
           {
-            "group": "Getting started",
+            "group": "Getting Started",
             "pages": [
-              "index",
+              "introduction",
               "quickstart",
-              "development"
+              "authentication"
             ]
           },
           {
-            "group": "Customization",
+            "group": "Core Concepts",
             "pages": [
-              "essentials/settings",
-              "essentials/navigation"
-            ]
-          },
-          {
-            "group": "Writing content",
-            "pages": [
-              "essentials/markdown",
-              "essentials/code",
-              "essentials/images",
-              "essentials/reusable-snippets"
-            ]
-          },
-          {
-            "group": "AI tools",
-            "pages": [
-              "ai-tools/cursor",
-              "ai-tools/claude-code",
-              "ai-tools/windsurf"
+              "concepts/voice-pipeline",
+              "concepts/audio-formats",
+              "concepts/error-handling"
             ]
           }
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Text-to-Speech",
         "groups": [
           {
-            "group": "API documentation",
+            "group": "Overview",
             "pages": [
-              "api-reference/introduction"
+              "tts/introduction",
+              "tts/getting-started",
+              "tts/comparison"
             ]
           },
           {
-            "group": "Endpoint examples",
+            "group": "TTS Engines",
             "pages": [
-              "api-reference/endpoint/get",
-              "api-reference/endpoint/create",
-              "api-reference/endpoint/delete",
-              "api-reference/endpoint/webhook"
+              "tts/engines/orpheus",
+              "tts/engines/parler",
+              "tts/engines/kokoro",
+              "tts/engines/higgs"
+            ]
+          },
+          {
+            "group": "API Reference",
+            "pages": [
+              "tts/api/list-models",
+              "tts/api/orpheus-generate",
+              "tts/api/parler-generate",
+              "tts/api/voice-examples"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Voice WebSocket",
+        "groups": [
+          {
+            "group": "Connection",
+            "pages": [
+              "websocket/introduction",
+              "websocket/connection",
+              "websocket/authentication"
+            ]
+          },
+          {
+            "group": "Voice Pipeline",
+            "pages": [
+              "websocket/voice-pipeline",
+              "websocket/audio-processing",
+              "websocket/interruption-handling"
+            ]
+          },
+          {
+            "group": "Message Protocol",
+            "pages": [
+              "websocket/messages/overview",
+              "websocket/messages/audio-input",
+              "websocket/messages/transcription",
+              "websocket/messages/tts-output",
+              "websocket/messages/emotions"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "websocket/features/turn-detection",
+              "websocket/features/emotion-recognition",
+              "websocket/features/idle-timeout"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "Integrations",
+        "groups": [
+          {
+            "group": "SDKs",
+            "pages": [
+              "integrations/javascript",
+              "integrations/python",
+              "integrations/curl"
+            ]
+          },
+          {
+            "group": "Examples",
+            "pages": [
+              "integrations/examples/simple-tts",
+              "integrations/examples/voice-chat",
+              "integrations/examples/emotion-analysis"
             ]
           }
         ]
@@ -71,19 +126,19 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Documentation",
-          "href": "https://mintlify.com/docs",
-          "icon": "book-open-cover"
+          "anchor": "API Playground",
+          "href": "https://api.nextevi.com/docs",
+          "icon": "play"
         },
         {
-          "anchor": "Community",
-          "href": "https://mintlify.com/community",
-          "icon": "slack"
+          "anchor": "GitHub",
+          "href": "https://github.com/nextevi",
+          "icon": "github"
         },
         {
-          "anchor": "Blog",
-          "href": "https://mintlify.com/blog",
-          "icon": "newspaper"
+          "anchor": "Support",
+          "href": "mailto:support@nextevi.com",
+          "icon": "envelope"
         }
       ]
     }
@@ -95,14 +150,14 @@
   "navbar": {
     "links": [
       {
-        "label": "Support",
-        "href": "mailto:hi@mintlify.com"
+        "label": "API Status",
+        "href": "https://status.nextevi.com"
       }
     ],
     "primary": {
       "type": "button",
-      "label": "Dashboard",
-      "href": "https://dashboard.mintlify.com"
+      "label": "Get API Key",
+      "href": "https://dashboard.nextevi.com"
     }
   },
   "contextual": {
@@ -119,9 +174,9 @@
   },
   "footer": {
     "socials": {
-      "x": "https://x.com/mintlify",
-      "github": "https://github.com/mintlify",
-      "linkedin": "https://linkedin.com/company/mintlify"
+      "x": "https://x.com/nextevi",
+      "github": "https://github.com/nextevi",
+      "linkedin": "https://linkedin.com/company/nextevi"
     }
   }
 }
