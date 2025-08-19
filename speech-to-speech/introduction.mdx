@@ -41,24 +41,6 @@ NextEVI's Speech to Speech (EVI) is an advanced, real-time emotionally intellige
 - **Turn Detection**: Automatic detection of speaking turns and pauses
 - **Streaming Responses**: Real-time response generation and delivery
 
-## Architecture Overview
-
-NextEVI processes voice conversations through a sophisticated pipeline:
-
-```mermaid
-graph LR
-    A[User Voice] --> B[Audio Capture]
-    B --> C[Speech-to-Text]
-    C --> D[Emotion Analysis]
-    D --> E[LLM Processing]
-    E --> F[Text-to-Speech]
-    F --> G[Audio Output]
-    
-    C -.-> H[Real-time Transcription]
-    D -.-> I[Emotion Events]
-    E -.-> J[Response Chunks]
-    F -.-> K[Audio Chunks]
-```
 
 ## Use Cases
 
@@ -84,24 +66,6 @@ graph LR
   </Accordion>
 </AccordionGroup>
 
-## NextEVI vs Hume.ai
-
-<Tip>
-NextEVI is designed as a comprehensive alternative to Hume.ai's EVI, with enhanced features and better developer experience.
-</Tip>
-
-| Feature | NextEVI | Hume.ai EVI |
-|---------|---------|-------------|
-| **Real-time Voice** | ✅ Full-duplex | ✅ Full-duplex |
-| **Emotion Recognition** | ✅ Advanced | ✅ Standard |
-| **React SDK** | ✅ Comprehensive | ✅ Basic |
-| **Multiple Auth Methods** | ✅ API Key + JWT | ✅ API Key only |
-| **Custom TTS Voices** | ✅ Multiple engines | ❌ Limited |
-| **Turn Detection** | ✅ Advanced | ✅ Standard |
-| **Interruption Handling** | ✅ Intelligent | ✅ Basic |
-| **Audio Configuration** | ✅ Highly configurable | ❌ Limited |
-| **WebSocket Protocol** | ✅ Optimized | ✅ Standard |
-| **Pricing** | 💰 Competitive | 💰💰 Premium |
 
 ## Getting Started
 
@@ -136,6 +100,3 @@ Ready to build with NextEVI? Choose your integration method:
   </Card>
 </CardGroup>
 
-<Note>
-  **Migration from Hume.ai?** We provide migration guides and compatibility layers to help you switch seamlessly from Hume.ai's EVI to NextEVI.
-</Note>

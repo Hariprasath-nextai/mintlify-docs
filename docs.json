@@ -63,45 +63,6 @@
         ]
       },
       {
-        "tab": "Voice WebSocket",
-        "groups": [
-          {
-            "group": "Connection",
-            "pages": [
-              "websocket/introduction",
-              "websocket/connection",
-              "websocket/authentication"
-            ]
-          },
-          {
-            "group": "Voice Pipeline",
-            "pages": [
-              "websocket/voice-pipeline",
-              "websocket/audio-processing",
-              "websocket/interruption-handling"
-            ]
-          },
-          {
-            "group": "Message Protocol",
-            "pages": [
-              "websocket/messages/overview",
-              "websocket/messages/audio-input",
-              "websocket/messages/transcription",
-              "websocket/messages/tts-output",
-              "websocket/messages/emotions"
-            ]
-          },
-          {
-            "group": "Features",
-            "pages": [
-              "websocket/features/turn-detection",
-              "websocket/features/emotion-recognition",
-              "websocket/features/idle-timeout"
-            ]
-          }
-        ]
-      },
-      {
         "tab": "Speech to Speech (EVI)",
         "groups": [
           {
@@ -164,7 +125,7 @@
       "anchors": [
         {
           "anchor": "API Playground",
-          "href": "https://api.nextevi.com/docs",
+          "href": "https://app.nextevi.com/dashboard/evi-playground",
           "icon": "play"
         },
         {
