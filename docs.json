@@ -8,64 +8,66 @@
     "dark": "#b8520a"
   },
   "favicon": "/favicon.svg",
-  "navigation": [
-    {
-      "group": "Getting Started",
-      "pages": [
-        "introduction",
-        "quickstart",
-        "authentication"
-      ]
-    },
-    {
-      "group": "Speech to Speech (EVI)",
-      "pages": [
-        "speech-to-speech/introduction",
-        "speech-to-speech/api-reference",
-        "speech-to-speech/react-sdk/installation",
-        "speech-to-speech/react-sdk/hooks",
-        "speech-to-speech/websocket/protocol",
-        "speech-to-speech/features/emotions",
-        "speech-to-speech/features/turn-detection",
-        "speech-to-speech/examples/simple-chat"
-      ]
-    },
-    {
-      "group": "Text-to-Speech",
-      "pages": [
-        "tts/introduction",
-        "tts/getting-started",
-        "tts/comparison",
-        "tts/engines/orpheus",
-        "tts/engines/parler",
-        "tts/engines/kokoro",
-        "tts/engines/higgs",
-        "tts/api/list-models",
-        "tts/api/orpheus-generate",
-        "tts/api/parler-generate",
-        "tts/api/voice-examples"
-      ]
-    },
-    {
-      "group": "Integrations",
-      "pages": [
-        "integrations/javascript",
-        "integrations/python",
-        "integrations/curl",
-        "integrations/examples/simple-tts",
-        "integrations/examples/voice-chat",
-        "integrations/examples/emotion-analysis"
-      ]
-    },
-    {
-      "group": "Core Concepts",
-      "pages": [
-        "concepts/voice-pipeline",
-        "concepts/audio-formats",
-        "concepts/error-handling"
-      ]
-    }
-  ],
+  "navigation": {
+    "groups": [
+      {
+        "group": "Getting Started",
+        "pages": [
+          "introduction",
+          "quickstart",
+          "authentication"
+        ]
+      },
+      {
+        "group": "Speech to Speech (EVI)",
+        "pages": [
+          "speech-to-speech/introduction",
+          "speech-to-speech/api-reference",
+          "speech-to-speech/react-sdk/installation",
+          "speech-to-speech/react-sdk/hooks",
+          "speech-to-speech/websocket/protocol",
+          "speech-to-speech/features/emotions",
+          "speech-to-speech/features/turn-detection",
+          "speech-to-speech/examples/simple-chat"
+        ]
+      },
+      {
+        "group": "Text-to-Speech",
+        "pages": [
+          "tts/introduction",
+          "tts/getting-started",
+          "tts/comparison",
+          "tts/engines/orpheus",
+          "tts/engines/parler",
+          "tts/engines/kokoro",
+          "tts/engines/higgs",
+          "tts/api/list-models",
+          "tts/api/orpheus-generate",
+          "tts/api/parler-generate",
+          "tts/api/voice-examples"
+        ]
+      },
+      {
+        "group": "Integrations",
+        "pages": [
+          "integrations/javascript",
+          "integrations/python",
+          "integrations/curl",
+          "integrations/examples/simple-tts",
+          "integrations/examples/voice-chat",
+          "integrations/examples/emotion-analysis"
+        ]
+      },
+      {
+        "group": "Core Concepts",
+        "pages": [
+          "concepts/voice-pipeline",
+          "concepts/audio-formats",
+          "concepts/error-handling"
+        ]
+      }
+    ]
+  },
   "global": {
       "anchors": [
         {
