@@ -11,26 +11,26 @@ NextEVI is a comprehensive voice AI platform that enables developers to build so
 
 NextEVI combines cutting-edge AI technologies into a unified platform for voice-first applications:
 
-- **Real-time Voice Processing**: WebSocket-based voice communication with streaming STT, LLM processing, and TTS synthesis
+- **Speech to Speech (EVI)**: Full-duplex voice conversations with emotion recognition and intelligent turn detection
 - **Multi-Engine TTS**: Choose from multiple high-quality text-to-speech engines optimized for different use cases
-- **Emotion Recognition**: Real-time emotion analysis from speech for enhanced user experiences
-- **Turn Detection**: Intelligent conversation flow management with interruption handling
+- **React SDK**: Comprehensive React components and hooks for rapid voice integration
+- **WebSocket API**: Real-time bidirectional communication for custom implementations
 - **Scalable Architecture**: Production-ready infrastructure supporting concurrent voice sessions
 
 ## Key Features
 
 <CardGroup cols={2}>
-  <Card title="Real-Time Voice Pipeline" icon="microphone" href="/websocket/introduction">
-    Stream audio, get live transcriptions, and receive AI responses with minimal latency
+  <Card title="Speech to Speech (EVI)" icon="comments" href="/speech-to-speech/introduction">
+    Real-time voice conversations with emotion recognition and natural flow
   </Card>
   <Card title="Multiple TTS Engines" icon="volume-high" href="/tts/introduction">
     Orpheus, Parler, Kokoro, and Higgs engines for diverse voice synthesis needs
   </Card>
-  <Card title="Emotion Recognition" icon="face-smile" href="/websocket/features/emotion-recognition">
-    Analyze emotional context from speech for more engaging interactions
+  <Card title="React SDK" icon="react" href="/speech-to-speech/react-sdk/installation">
+    Comprehensive React components and hooks for voice integration
   </Card>
-  <Card title="Interruption Handling" icon="hand" href="/websocket/interruption-handling">
-    Natural conversation flow with intelligent turn-taking and interruption detection
+  <Card title="Emotion Recognition" icon="heart" href="/speech-to-speech/features/emotions">
+    Advanced emotion analysis from speech for empathetic AI responses
   </Card>
 </CardGroup>
 
@@ -55,28 +55,13 @@ NextEVI powers a wide range of voice AI applications:
     Sign up for a NextEVI account and obtain your API credentials from the dashboard.
   </Step>
   <Step title="Choose Your Integration">
-    Select between REST API for simple TTS or WebSocket API for real-time voice interactions.
+    Select between React SDK for quick integration or WebSocket API for custom implementations.
   </Step>
   <Step title="Start Building">
     Use our SDKs and examples to quickly integrate voice AI into your application.
   </Step>
 </Steps>
 
-## Architecture Overview
-
-NextEVI's architecture is designed for scalability and real-time performance:
-
-```mermaid
-graph TD
-    A[Client Application] --> B[WebSocket Gateway]
-    B --> C[Speech-to-Text]
-    C --> D[Language Model]
-    D --> E[Text-to-Speech]
-    E --> B
-    B --> F[Emotion Analysis]
-    C --> G[Turn Detection]
-    D --> H[Response Generation]
-```
 
 ## Next Steps
 
@@ -84,11 +69,11 @@ graph TD
   <Card title="Quick Start" icon="rocket" href="/quickstart">
     Get up and running with NextEVI in 5 minutes
   </Card>
+  <Card title="Speech to Speech" icon="comments" href="/speech-to-speech/introduction">
+    Build real-time voice conversations with EVI
+  </Card>
   <Card title="TTS Services" icon="speaker-wave" href="/tts/getting-started">
     Explore our text-to-speech capabilities
-  </Card>
-  <Card title="Voice WebSocket" icon="bolt" href="/websocket/introduction">
-    Build real-time voice applications
   </Card>
 </CardGroup>
 

@@ -3,124 +3,69 @@
   "theme": "mint",
   "name": "NextEVI Documentation",
   "colors": {
-    "primary": "#7C3AED",
-    "light": "#A855F7",
-    "dark": "#5B21B6"
+    "primary": "#d76309",
+    "light": "#ea8b39",
+    "dark": "#b8520a"
   },
   "favicon": "/favicon.svg",
-  "navigation": {
-    "tabs": [
-      {
-        "tab": "Introduction",
-        "groups": [
-          {
-            "group": "Getting Started",
-            "pages": [
-              "introduction",
-              "quickstart",
-              "authentication"
-            ]
-          },
-          {
-            "group": "Core Concepts",
-            "pages": [
-              "concepts/voice-pipeline",
-              "concepts/audio-formats",
-              "concepts/error-handling"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Text-to-Speech",
-        "groups": [
-          {
-            "group": "Overview",
-            "pages": [
-              "tts/introduction",
-              "tts/getting-started",
-              "tts/comparison"
-            ]
-          },
-          {
-            "group": "TTS Engines",
-            "pages": [
-              "tts/engines/orpheus",
-              "tts/engines/parler",
-              "tts/engines/kokoro",
-              "tts/engines/higgs"
-            ]
-          },
-          {
-            "group": "API Reference",
-            "pages": [
-              "tts/api/list-models",
-              "tts/api/orpheus-generate",
-              "tts/api/parler-generate",
-              "tts/api/voice-examples"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Speech to Speech (EVI)",
-        "groups": [
-          {
-            "group": "Getting Started",
-            "pages": [
-              "speech-to-speech/introduction"
-            ]
-          },
-          {
-            "group": "React SDK",
-            "pages": [
-              "speech-to-speech/react-sdk/installation",
-              "speech-to-speech/react-sdk/hooks"
-            ]
-          },
-          {
-            "group": "WebSocket API",
-            "pages": [
-              "speech-to-speech/websocket/protocol"
-            ]
-          },
-          {
-            "group": "Advanced Features",
-            "pages": [
-              "speech-to-speech/features/emotions",
-              "speech-to-speech/features/turn-detection"
-            ]
-          },
-          {
-            "group": "Examples",
-            "pages": [
-              "speech-to-speech/examples/simple-chat"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Integrations",
-        "groups": [
-          {
-            "group": "SDKs",
-            "pages": [
-              "integrations/javascript",
-              "integrations/python",
-              "integrations/curl"
-            ]
-          },
-          {
-            "group": "Examples",
-            "pages": [
-              "integrations/examples/simple-tts",
-              "integrations/examples/voice-chat",
-              "integrations/examples/emotion-analysis"
-            ]
-          }
-        ]
-      }
-    ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "authentication"
+      ]
+    },
+    {
+      "group": "Speech to Speech (EVI)",
+      "pages": [
+        "speech-to-speech/introduction",
+        "speech-to-speech/api-reference",
+        "speech-to-speech/react-sdk/installation",
+        "speech-to-speech/react-sdk/hooks",
+        "speech-to-speech/websocket/protocol",
+        "speech-to-speech/features/emotions",
+        "speech-to-speech/features/turn-detection",
+        "speech-to-speech/examples/simple-chat"
+      ]
+    },
+    {
+      "group": "Text-to-Speech",
+      "pages": [
+        "tts/introduction",
+        "tts/getting-started",
+        "tts/comparison",
+        "tts/engines/orpheus",
+        "tts/engines/parler",
+        "tts/engines/kokoro",
+        "tts/engines/higgs",
+        "tts/api/list-models",
+        "tts/api/orpheus-generate",
+        "tts/api/parler-generate",
+        "tts/api/voice-examples"
+      ]
+    },
+    {
+      "group": "Integrations",
+      "pages": [
+        "integrations/javascript",
+        "integrations/python",
+        "integrations/curl",
+        "integrations/examples/simple-tts",
+        "integrations/examples/voice-chat",
+        "integrations/examples/emotion-analysis"
+      ]
+    },
+    {
+      "group": "Core Concepts",
+      "pages": [
+        "concepts/voice-pipeline",
+        "concepts/audio-formats",
+        "concepts/error-handling"
+      ]
+    }
+  ],
     "global": {
       "anchors": [
         {
