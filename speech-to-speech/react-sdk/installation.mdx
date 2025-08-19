@@ -1,0 +1,375 @@
+---
+title: "Installation & Quick Start"
+description: "Get started with NextEVI's React SDK in minutes"
+---
+
+## Installation
+
+Install the NextEVI Voice React SDK from npm:
+
+<CodeGroup>
+```bash npm
+npm install @nextevi/voice-react
+```
+
+```bash yarn  
+yarn add @nextevi/voice-react
+```
+
+```bash pnpm
+pnpm add @nextevi/voice-react
+```
+</CodeGroup>
+
+## Prerequisites
+
+Before getting started, make sure you have:
+
+<AccordionGroup>
+  <Accordion title="NextEVI API Credentials" icon="key">
+    You'll need either:
+    - **API Key**: Organization API key (starts with `oak_`)
+    - **Project ID**: Your project identifier
+    - **Config ID**: Voice configuration identifier
+    
+    Or:
+    - **JWT Token**: For user-based authentication
+    - **Config ID**: Voice configuration identifier
+    
+    Get these from your [NextEVI Dashboard](https://dashboard.nextevi.com).
+  </Accordion>
+  
+  <Accordion title="Browser Requirements" icon="globe">
+    The SDK requires modern browsers with support for:
+    - WebSocket API
+    - Web Audio API (AudioContext)
+    - MediaDevices API (getUserMedia)
+    - AudioWorklet API
+    
+    **Supported browsers:**
+    - Chrome 66+
+    - Firefox 76+  
+    - Safari 14.1+
+    - Edge 79+
+  </Accordion>
+  
+  <Accordion title="React Version" icon="react">
+    - React 16.8+ (hooks support)
+    - TypeScript support included
+  </Accordion>
+</AccordionGroup>
+
+## Quick Start
+
+Here's a complete example to get you started with voice conversations:
+
+<Steps>
+  <Step title="Set up the Provider">
+    Wrap your app with the `VoiceProvider`:
+
+```tsx
+import React from 'react';
+import { VoiceProvider } from '@nextevi/voice-react';
+import VoiceChat from './VoiceChat';
+
+function App() {
+  return (
+    <VoiceProvider debug={true}>
+      <div className="app">
+        <h1>NextEVI Voice Chat</h1>
+        <VoiceChat />
+      </div>
+    </VoiceProvider>
+  );
+}
+
+export default App;
+```
+  </Step>
+
+  <Step title="Create the Voice Component">
+    Use the `useVoice` hook for voice interactions:
+
+```tsx
+import React from 'react';
+import { useVoice } from '@nextevi/voice-react';
+
+function VoiceChat() {
+  const { connect, disconnect, readyState, messages, error } = useVoice();
+  
+  const handleConnect = async () => {
+    try {
+      await connect({
+        auth: {
+          apiKey: "oak_your_api_key_here",
+          projectId: "your-project-id", 
+          configId: "your-config-id"
+        }
+      });
+    } catch (error) {
+      console.error('Connection failed:', error);
+    }
+  };
+  
+  return (
+    <div style={{ padding: '20px' }}>
+      <div style={{ marginBottom: '20px' }}>
+        <button 
+          onClick={handleConnect}
+          disabled={readyState === 'connecting'}
+          style={{
+            padding: '10px 20px',
+            backgroundColor: readyState === 'connected' ? '#22c55e' : '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          {readyState === 'connected' ? 'Connected' : 
+           readyState === 'connecting' ? 'Connecting...' : 'Connect'}
+        </button>
+        
+        <button 
+          onClick={disconnect}
+          disabled={readyState === 'disconnected'}
+          style={{ 
+            marginLeft: '10px',
+            padding: '10px 20px',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer'
+          }}
+        >
+          Disconnect
+        </button>
+      </div>
+      
+      <div style={{ marginBottom: '10px' }}>
+        Status: <strong>{readyState}</strong>
+      </div>
+      
+      {error && (
+        <div style={{ 
+          color: '#ef4444', 
+          backgroundColor: '#fef2f2',
+          padding: '10px',
+          borderRadius: '6px',
+          marginBottom: '20px'
+        }}>
+          Error: {error.message}
+        </div>
+      )}
+      
+      <div style={{ 
+        maxHeight: '400px', 
+        overflowY: 'auto',
+        border: '1px solid #e5e7eb',
+        borderRadius: '6px',
+        padding: '10px'
+      }}>
+        {messages.map(message => (
+          <div key={message.id} style={{ 
+            marginBottom: '10px', 
+            padding: '12px',
+            backgroundColor: message.type === 'user' ? '#eff6ff' : '#f0fdf4',
+            borderRadius: '8px',
+            borderLeft: `4px solid ${message.type === 'user' ? '#3b82f6' : '#22c55e'}`
+          }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+              {message.type === 'user' ? 'You' : 'Assistant'}
+            </div>
+            <div>{message.content}</div>
+            <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>
+              {message.timestamp.toLocaleTimeString()}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default VoiceChat;
+```
+  </Step>
+
+  <Step title="Environment Variables (Optional)">
+    For better security, use environment variables:
+
+```bash .env.local
+NEXTEVI_API_KEY=oak_your_api_key
+NEXTEVI_PROJECT_ID=your-project-id
+NEXTEVI_CONFIG_ID=your-config-id
+NEXTEVI_DEBUG=true
+```
+
+Then update your component:
+
+```tsx
+import { configFromEnvironment } from '@nextevi/voice-react';
+
+function VoiceChat() {
+  const { connect } = useVoice();
+  
+  const handleConnect = async () => {
+    const envConfig = configFromEnvironment();
+    
+    await connect({
+      auth: {
+        apiKey: envConfig.apiKey!,
+        projectId: envConfig.projectId!,
+        configId: envConfig.configId!
+      }
+    });
+  };
+  
+  // ... rest of component
+}
+```
+  </Step>
+</Steps>
+
+## Authentication Methods
+
+NextEVI supports two authentication methods:
+
+<Tabs>
+  <Tab title="API Key Authentication">
+    Use your organization API key for server-side or trusted applications:
+
+```tsx
+const { connect } = useVoice();
+
+await connect({
+  auth: {
+    apiKey: "oak_your_api_key",
+    projectId: "your-project-id",
+    configId: "your-config-id"
+  }
+});
+```
+
+<Warning>
+Never expose API keys in client-side code in production. Use JWT tokens for client applications.
+</Warning>
+  </Tab>
+
+  <Tab title="JWT Authentication">
+    Use JWT tokens for client-side applications:
+
+```tsx
+const { connect } = useVoice();
+
+await connect({
+  auth: {
+    accessToken: "your_jwt_token",
+    configId: "your-config-id",
+    projectId: "your-project-id" // optional
+  }
+});
+```
+
+<Tip>
+JWT tokens provide better security for client-side applications and can include user-specific permissions.
+</Tip>
+  </Tab>
+</Tabs>
+
+## Audio Configuration
+
+Customize audio processing settings:
+
+```tsx
+await connect({
+  auth: {
+    apiKey: "oak_your_api_key",
+    projectId: "your-project-id",
+    configId: "your-config-id"
+  },
+  audioConfig: {
+    sampleRate: 24000,        // Audio sample rate (8000, 16000, 24000, 48000)
+    channels: 1,              // Number of audio channels (1 for mono)
+    encoding: 'linear16',     // Audio encoding format
+    echoCancellation: true,   // Enable echo cancellation
+    noiseSuppression: true,   // Enable noise suppression
+    autoGainControl: false    // Disable automatic gain control
+  }
+});
+```
+
+## Error Handling
+
+Handle common connection errors:
+
+```tsx
+const handleConnect = async () => {
+  try {
+    await connect({ auth: config });
+  } catch (error) {
+    switch (error.code) {
+      case 'MICROPHONE_ACCESS_DENIED':
+        alert('Please allow microphone access to use voice chat');
+        break;
+      case 'AUTHENTICATION_FAILED':
+        alert('Invalid API key or configuration');
+        break;
+      case 'NETWORK_ERROR':
+        alert('Network connection failed. Please check your internet.');
+        break;
+      case 'CONFIG_NOT_FOUND':
+        alert('Voice configuration not found. Please check your config ID.');
+        break;
+      default:
+        console.error('Connection failed:', error);
+        alert('Failed to connect. Please try again.');
+    }
+  }
+};
+```
+
+## Development Utilities
+
+Use built-in utilities for development and debugging:
+
+```tsx
+import { devUtils } from '@nextevi/voice-react';
+
+// Check browser compatibility
+const browserInfo = devUtils.checkEnvironment();
+console.log('Browser supported:', browserInfo.isSupported);
+
+// Test microphone access
+const micAccess = await devUtils.testMicrophone();
+console.log('Microphone access:', micAccess);
+
+// Validate configuration
+const config = { apiKey: "oak_key", projectId: "proj", configId: "config" };
+const isValid = devUtils.validateConfiguration(config);
+console.log('Config valid:', isValid);
+```
+
+## Next Steps
+
+Now that you have NextEVI running, explore more advanced features:
+
+<CardGroup cols={2}>
+  <Card title="Hooks Reference" icon="react" href="/speech-to-speech/react-sdk/hooks">
+    Learn about all available React hooks
+  </Card>
+  <Card title="Audio Configuration" icon="waveform" href="/speech-to-speech/react-sdk/audio-config">
+    Advanced audio processing options
+  </Card>
+  <Card title="Emotion Recognition" icon="heart" href="/speech-to-speech/features/emotions">
+    Access real-time emotion data
+  </Card>
+  <Card title="Examples" icon="code" href="/speech-to-speech/examples/simple-chat">
+    View complete working examples
+  </Card>
+</CardGroup>
+
+<Note>
+Need help? Join our [Discord community](https://discord.gg/nextevi) or [contact support](mailto:support@nextevi.com).
+</Note>

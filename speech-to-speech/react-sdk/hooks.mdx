@@ -1,0 +1,533 @@
+---
+title: "React Hooks Reference"
+description: "Complete reference for NextEVI React SDK hooks"
+---
+
+## Primary Hook
+
+### `useVoice`
+
+The main hook for voice interactions, providing comprehensive access to all voice functionality.
+
+```tsx
+import { useVoice } from '@nextevi/voice-react';
+
+const voice = useVoice();
+```
+
+#### Returns
+
+<ResponseField name="connect" type="function">
+  Establishes voice connection
+  
+  ```tsx
+  await connect({
+    auth: {
+      apiKey: "oak_your_api_key",
+      projectId: "your-project-id", 
+      configId: "your-config-id"
+    },
+    audioConfig?: {
+      sampleRate: 24000,
+      channels: 1,
+      encoding: 'linear16'
+    }
+  })
+  ```
+</ResponseField>
+
+<ResponseField name="disconnect" type="function">
+  Closes voice connection and cleans up resources
+  
+  ```tsx
+  disconnect()
+  ```
+</ResponseField>
+
+<ResponseField name="readyState" type="string">
+  Current connection state: `'disconnected'`, `'connecting'`, `'connected'`, or `'error'`
+</ResponseField>
+
+<ResponseField name="messages" type="VoiceMessage[]">
+  Array of conversation messages (user and assistant)
+</ResponseField>
+
+<ResponseField name="isRecording" type="boolean">
+  Whether microphone is actively capturing audio
+</ResponseField>
+
+<ResponseField name="isTTSPlaying" type="boolean">
+  Whether text-to-speech audio is currently playing
+</ResponseField>
+
+<ResponseField name="isWaitingForResponse" type="boolean">
+  Whether waiting for AI assistant response
+</ResponseField>
+
+<ResponseField name="connectionMetadata" type="ConnectionMetadata">
+  Connection information including session ID, timestamps
+</ResponseField>
+
+<ResponseField name="error" type="NextEVIError | null">
+  Current error state, if any
+</ResponseField>
+
+<ResponseField name="clearMessages" type="function">
+  Clears all conversation messages
+  
+  ```tsx
+  clearMessages()
+  ```
+</ResponseField>
+
+<ResponseField name="sendMessage" type="function">
+  Send text message to assistant (for testing/debugging)
+  
+  ```tsx
+  sendMessage("Hello, how are you?")
+  ```
+</ResponseField>
+
+## Specialized Hooks
+
+### `useVoiceStatus`
+
+Get detailed connection status information:
+
+```tsx
+import { useVoiceStatus } from '@nextevi/voice-react';
+
+const {
+  readyState,
+  error,
+  connectionMetadata,
+  isConnected,
+  isConnecting, 
+  isDisconnected,
+  hasError
+} = useVoiceStatus();
+```
+
+<ResponseField name="readyState" type="string">
+  Current connection state
+</ResponseField>
+
+<ResponseField name="error" type="NextEVIError | null">
+  Current error, if any
+</ResponseField>
+
+<ResponseField name="connectionMetadata" type="ConnectionMetadata">
+  Connection details and session information
+</ResponseField>
+
+<ResponseField name="isConnected" type="boolean">
+  Computed boolean: `readyState === 'connected'`
+</ResponseField>
+
+<ResponseField name="isConnecting" type="boolean">
+  Computed boolean: `readyState === 'connecting'`
+</ResponseField>
+
+<ResponseField name="isDisconnected" type="boolean">
+  Computed boolean: `readyState === 'disconnected'`
+</ResponseField>
+
+<ResponseField name="hasError" type="boolean">
+  Computed boolean: `error !== null`
+</ResponseField>
+
+### `useVoiceMessages`
+
+Manage conversation messages with enhanced utilities:
+
+```tsx
+import { useVoiceMessages } from '@nextevi/voice-react';
+
+const {
+  messages,
+  userMessages,
+  assistantMessages,
+  systemMessages,
+  errorMessages,
+  lastMessage,
+  hasStreamingMessages,
+  isWaitingForResponse,
+  clearMessages,
+  sendMessage,
+  messageCount,
+  conversationLength
+} = useVoiceMessages();
+```
+
+<ResponseField name="messages" type="VoiceMessage[]">
+  All conversation messages
+</ResponseField>
+
+<ResponseField name="userMessages" type="VoiceMessage[]">
+  Filtered array of user messages only
+</ResponseField>
+
+<ResponseField name="assistantMessages" type="VoiceMessage[]">
+  Filtered array of assistant messages only
+</ResponseField>
+
+<ResponseField name="systemMessages" type="VoiceMessage[]">
+  Filtered array of system messages
+</ResponseField>
+
+<ResponseField name="errorMessages" type="VoiceMessage[]">
+  Filtered array of error messages
+</ResponseField>
+
+<ResponseField name="lastMessage" type="VoiceMessage | null">
+  Most recent message in conversation
+</ResponseField>
+
+<ResponseField name="hasStreamingMessages" type="boolean">
+  Whether any messages are currently streaming
+</ResponseField>
+
+<ResponseField name="messageCount" type="number">
+  Total number of messages
+</ResponseField>
+
+<ResponseField name="conversationLength" type="number">
+  Total character count of all messages
+</ResponseField>
+
+### `useVoiceAudio`
+
+Monitor audio activity and states:
+
+```tsx
+import { useVoiceAudio } from '@nextevi/voice-react';
+
+const {
+  isRecording,
+  isTTSPlaying,
+  hasAudioActivity
+} = useVoiceAudio();
+```
+
+<ResponseField name="isRecording" type="boolean">
+  Whether microphone is capturing audio
+</ResponseField>
+
+<ResponseField name="isTTSPlaying" type="boolean">
+  Whether TTS audio is playing
+</ResponseField>
+
+<ResponseField name="hasAudioActivity" type="boolean">
+  Whether any audio activity is happening (recording or playing)
+</ResponseField>
+
+### `useSimpleVoice`
+
+Simplified connection API for basic use cases:
+
+```tsx
+import { useSimpleVoice } from '@nextevi/voice-react';
+
+const voice = useSimpleVoice({ debug: true });
+
+// Connect with individual parameters
+await voice.connect(
+  "oak_your_api_key",
+  "project_id", 
+  "config_id"
+);
+```
+
+<ResponseField name="connect" type="function">
+  Simplified connect method taking individual parameters
+  
+  ```tsx
+  await connect(apiKey: string, projectId: string, configId: string, options?: object)
+  ```
+</ResponseField>
+
+<ResponseField name="disconnect" type="function">
+  Disconnect from voice session
+</ResponseField>
+
+<ResponseField name="readyState" type="string">
+  Connection state
+</ResponseField>
+
+<ResponseField name="messages" type="VoiceMessage[]">
+  Conversation messages
+</ResponseField>
+
+## Advanced Hooks
+
+### `useVoiceIdleTimeout`
+
+Monitor and configure idle timeout behavior:
+
+```tsx
+import { useVoiceIdleTimeout } from '@nextevi/voice-react';
+
+const {
+  timeUntilTimeout,
+  isIdleWarning,
+  resetIdleTimer,
+  configureTimeout
+} = useVoiceIdleTimeout();
+```
+
+<ResponseField name="timeUntilTimeout" type="number">
+  Seconds remaining until idle timeout
+</ResponseField>
+
+<ResponseField name="isIdleWarning" type="boolean">
+  Whether idle warning period is active
+</ResponseField>
+
+<ResponseField name="resetIdleTimer" type="function">
+  Reset the idle timeout counter
+</ResponseField>
+
+<ResponseField name="configureTimeout" type="function">
+  Configure timeout settings
+  
+  ```tsx
+  configureTimeout({
+    enabled: true,
+    timeoutSeconds: 300,    // 5 minutes
+    warningSeconds: 30      // 30 second warning
+  })
+  ```
+</ResponseField>
+
+### `useVoiceTurnDetection`
+
+Access turn detection and conversation flow data:
+
+```tsx
+import { useVoiceTurnDetection } from '@nextevi/voice-react';
+
+const {
+  isUserTurn,
+  isAssistantTurn,
+  turnDuration,
+  silenceDuration,
+  lastTurnChange
+} = useVoiceTurnDetection();
+```
+
+<ResponseField name="isUserTurn" type="boolean">
+  Whether it's currently the user's turn to speak
+</ResponseField>
+
+<ResponseField name="isAssistantTurn" type="boolean">
+  Whether it's currently the assistant's turn to speak
+</ResponseField>
+
+<ResponseField name="turnDuration" type="number">
+  Duration of current turn in milliseconds
+</ResponseField>
+
+<ResponseField name="silenceDuration" type="number">
+  Duration of current silence in milliseconds
+</ResponseField>
+
+<ResponseField name="lastTurnChange" type="number">
+  Timestamp of last turn change
+</ResponseField>
+
+### `useVoiceDebug`
+
+Development and debugging utilities:
+
+```tsx
+import { useVoiceDebug } from '@nextevi/voice-react';
+
+const {
+  debugInfo,
+  connectionStats,
+  audioStats,
+  messageHistory,
+  exportLogs
+} = useVoiceDebug();
+```
+
+<ResponseField name="debugInfo" type="object">
+  Current debug information and internal state
+</ResponseField>
+
+<ResponseField name="connectionStats" type="object">
+  WebSocket connection statistics and performance metrics
+</ResponseField>
+
+<ResponseField name="audioStats" type="object">
+  Audio processing statistics and quality metrics
+</ResponseField>
+
+<ResponseField name="messageHistory" type="object[]">
+  Raw WebSocket message history for debugging
+</ResponseField>
+
+<ResponseField name="exportLogs" type="function">
+  Export debug logs for analysis
+  
+  ```tsx
+  const logs = exportLogs();
+  console.log('Debug logs:', logs);
+  ```
+</ResponseField>
+
+## Type Definitions
+
+### VoiceMessage
+
+```tsx
+interface VoiceMessage {
+  id: string;
+  type: 'user' | 'assistant' | 'system' | 'error';
+  content: string;
+  timestamp: Date;
+  metadata?: {
+    emotions?: EmotionData;
+    transcription?: TranscriptionResult;
+    audioChunk?: TTSChunk;
+    [key: string]: any;
+  };
+}
+```
+
+### NextEVIConfig
+
+```tsx
+interface NextEVIConfig {
+  apiKey?: string;
+  accessToken?: string;
+  projectId?: string;
+  configId: string;
+  websocketUrl?: string;
+  debug?: boolean;
+}
+```
+
+### AudioConfig
+
+```tsx
+interface AudioConfig {
+  sampleRate?: number;
+  channels?: number;
+  encoding?: 'linear16' | 'mulaw' | 'alaw';
+  echoCancellation?: boolean;
+  noiseSuppression?: boolean;
+  autoGainControl?: boolean;
+}
+```
+
+### ConnectionMetadata
+
+```tsx
+interface ConnectionMetadata {
+  sessionId: string;
+  connectionId: string;
+  connectedAt: Date;
+  configId: string;
+  projectId: string;
+  serverInfo?: {
+    version: string;
+    region: string;
+  };
+}
+```
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Hook Selection" icon="react">
+    - Use `useVoice` for most applications - it provides everything you need
+    - Use specialized hooks (`useVoiceStatus`, `useVoiceMessages`, etc.) when you need specific functionality
+    - Use `useSimpleVoice` for quick prototypes or simple integrations
+    - Use `useVoiceDebug` only in development environments
+  </Accordion>
+  
+  <Accordion title="Error Handling" icon="exclamation-triangle">
+    - Always handle connection errors in your UI
+    - Monitor the `error` state from hooks
+    - Implement retry logic for network issues
+    - Validate configuration before connecting
+  </Accordion>
+  
+  <Accordion title="Performance" icon="gauge-high">
+    - Use `React.memo` for message components to prevent unnecessary re-renders
+    - Implement virtual scrolling for long conversation histories
+    - Clean up connections when components unmount
+    - Use `useVoiceAudio` to show loading states during audio activity
+  </Accordion>
+  
+  <Accordion title="User Experience" icon="user">
+    - Show clear connection status to users
+    - Provide visual feedback for audio activity (recording/playing)
+    - Handle microphone permissions gracefully
+    - Implement idle timeout warnings
+  </Accordion>
+</AccordionGroup>
+
+## Examples
+
+### Basic Voice Chat
+
+```tsx
+import React from 'react';
+import { useVoice } from '@nextevi/voice-react';
+
+function VoiceChat() {
+  const { connect, disconnect, readyState, messages } = useVoice();
+  
+  const handleConnect = async () => {
+    await connect({
+      auth: {
+        apiKey: process.env.NEXTEVI_API_KEY,
+        projectId: process.env.NEXTEVI_PROJECT_ID,
+        configId: process.env.NEXTEVI_CONFIG_ID
+      }
+    });
+  };
+  
+  return (
+    <div>
+      <button onClick={handleConnect} disabled={readyState === 'connecting'}>
+        {readyState === 'connected' ? 'Connected' : 'Connect'}
+      </button>
+      
+      <div>
+        {messages.map(message => (
+          <div key={message.id}>
+            <strong>{message.type}:</strong> {message.content}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### Status Monitor
+
+```tsx
+import React from 'react';
+import { useVoiceStatus, useVoiceAudio } from '@nextevi/voice-react';
+
+function VoiceStatusMonitor() {
+  const { readyState, error, connectionMetadata } = useVoiceStatus();
+  const { isRecording, isTTSPlaying } = useVoiceAudio();
+  
+  return (
+    <div>
+      <div>Status: {readyState}</div>
+      <div>Recording: {isRecording ? '🎤' : '🔇'}</div>
+      <div>Playing: {isTTSPlaying ? '🔊' : '🔇'}</div>
+      {error && <div>Error: {error.message}</div>}
+      {connectionMetadata && (
+        <div>Session: {connectionMetadata.sessionId}</div>
+      )}
+    </div>
+  );
+}
+```

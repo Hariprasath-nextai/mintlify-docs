@@ -102,6 +102,43 @@
         ]
       },
       {
+        "tab": "Speech to Speech (EVI)",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": [
+              "speech-to-speech/introduction"
+            ]
+          },
+          {
+            "group": "React SDK",
+            "pages": [
+              "speech-to-speech/react-sdk/installation",
+              "speech-to-speech/react-sdk/hooks"
+            ]
+          },
+          {
+            "group": "WebSocket API",
+            "pages": [
+              "speech-to-speech/websocket/protocol"
+            ]
+          },
+          {
+            "group": "Advanced Features",
+            "pages": [
+              "speech-to-speech/features/emotions",
+              "speech-to-speech/features/turn-detection"
+            ]
+          },
+          {
+            "group": "Examples",
+            "pages": [
+              "speech-to-speech/examples/simple-chat"
+            ]
+          }
+        ]
+      },
+      {
         "tab": "Integrations",
         "groups": [
           {
@@ -144,8 +181,8 @@
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/nextevi-logo.png",
+    "dark": "/logo/nextevi-logo.png"
   },
   "navbar": {
     "links": [

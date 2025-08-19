@@ -1,0 +1,565 @@
+---
+title: "WebSocket Protocol"
+description: "Complete WebSocket message protocol for NextEVI voice communication"
+---
+
+## Overview
+
+NextEVI uses WebSocket for real-time bidirectional voice communication. The protocol follows patterns similar to Hume.ai's EVI but with enhanced features and additional message types.
+
+## Connection
+
+### WebSocket URL
+
+```
+wss://api.nextevi.com/voice/websocket/{connection_id}
+```
+
+### Authentication
+
+<Tabs>
+  <Tab title="API Key Authentication">
+    Pass credentials as query parameters:
+
+```
+wss://api.nextevi.com/voice/websocket/{connection_id}?api_key=oak_your_api_key&config_id=your_config_id&project_id=your_project_id
+```
+
+**Parameters:**
+- `api_key` - Organization API key (starts with `oak_`)
+- `config_id` - Voice configuration identifier
+- `project_id` - Project identifier (optional, auto-detected if not provided)
+  </Tab>
+
+  <Tab title="JWT Authentication">
+    Pass JWT token via Authorization header or query parameter:
+
+**Header (Recommended):**
+```
+Authorization: Bearer your_jwt_token
+```
+
+**Query Parameter:**
+```
+wss://api.nextevi.com/voice/websocket/{connection_id}?authorization=Bearer%20your_jwt_token&config_id=your_config_id
+```
+  </Tab>
+</Tabs>
+
+## Message Format
+
+All messages follow a consistent JSON structure:
+
+```json
+{
+  "type": "message_type",
+  "timestamp": 1645123456.789,
+  "message_id": "uuid-string",
+  "data": {
+    // Message-specific payload
+  }
+}
+```
+
+<ResponseField name="type" type="string" required>
+  Message type identifier
+</ResponseField>
+
+<ResponseField name="timestamp" type="number" required>
+  Unix timestamp with millisecond precision
+</ResponseField>
+
+<ResponseField name="message_id" type="string" required>
+  Unique message identifier (UUID)
+</ResponseField>
+
+<ResponseField name="data" type="object">
+  Message-specific payload data
+</ResponseField>
+
+## Incoming Messages (Client → Server)
+
+### Audio Input
+
+Send PCM audio data to the server for processing:
+
+```json
+{
+  "type": "audio_input",
+  "timestamp": 1645123456.789,
+  "message_id": "audio-chunk-001",
+  "data": {
+    "audio": "base64-encoded-pcm-data",
+    "chunk_id": 1,
+    "sample_rate": 24000,
+    "channels": 1,
+    "encoding": "linear16"
+  }
+}
+```
+
+<ResponseField name="data.audio" type="string" required>
+  Base64-encoded PCM audio data
+</ResponseField>
+
+<ResponseField name="data.chunk_id" type="number">
+  Sequential chunk identifier for ordering
+</ResponseField>
+
+<ResponseField name="data.sample_rate" type="number">
+  Audio sample rate in Hz (default: 24000)
+</ResponseField>
+
+<ResponseField name="data.channels" type="number">
+  Number of audio channels (default: 1)
+</ResponseField>
+
+<ResponseField name="data.encoding" type="string">
+  Audio encoding format (default: "linear16")
+</ResponseField>
+
+### Session Settings
+
+Configure session parameters:
+
+```json
+{
+  "type": "session_settings",
+  "timestamp": 1645123456.789,
+  "message_id": "settings-001",
+  "data": {
+    "audio": {
+      "sample_rate": 24000,
+      "channels": 1,
+      "encoding": "linear16"
+    },
+    "turn_detection": {
+      "enabled": true,
+      "silence_threshold": 0.5,
+      "min_speaking_time": 0.3
+    },
+    "emotion_detection": {
+      "enabled": true,
+      "confidence_threshold": 0.7
+    },
+    "idle_timeout": {
+      "enabled": true,
+      "timeout_seconds": 300,
+      "warning_seconds": 30
+    }
+  }
+}
+```
+
+### Keep Alive
+
+Maintain connection during periods of inactivity:
+
+```json
+{
+  "type": "KeepAlive",
+  "timestamp": 1645123456.789,
+  "message_id": "keepalive-001"
+}
+```
+
+## Outgoing Messages (Server → Client)
+
+### Transcription
+
+Real-time speech-to-text results:
+
+```json
+{
+  "type": "transcription",
+  "timestamp": 1645123456.789,
+  "message_id": "transcript-001",
+  "data": {
+    "transcript": "Hello, how can I help you today?",
+    "confidence": 0.95,
+    "is_final": true,
+    "start_time": 1645123456.500,
+    "end_time": 1645123458.200,
+    "words": [
+      {
+        "word": "Hello",
+        "confidence": 0.98,
+        "start_time": 1645123456.500,
+        "end_time": 1645123456.800
+      },
+      {
+        "word": "how",
+        "confidence": 0.92,
+        "start_time": 1645123456.900,
+        "end_time": 1645123457.100
+      }
+    ],
+    "emotions": {
+      "joy": 0.3,
+      "neutral": 0.6,
+      "surprise": 0.1
+    }
+  }
+}
+```
+
+<ResponseField name="data.transcript" type="string" required>
+  Transcribed text
+</ResponseField>
+
+<ResponseField name="data.confidence" type="number">
+  Overall transcription confidence (0-1)
+</ResponseField>
+
+<ResponseField name="data.is_final" type="boolean">
+  Whether this is the final transcription result
+</ResponseField>
+
+<ResponseField name="data.words" type="array">
+  Word-level transcription details
+</ResponseField>
+
+<ResponseField name="data.emotions" type="object">
+  Detected emotions with confidence scores
+</ResponseField>
+
+### LLM Response Chunk
+
+Streaming AI assistant response:
+
+```json
+{
+  "type": "llm_response_chunk",
+  "timestamp": 1645123456.789,
+  "message_id": "llm-chunk-001",
+  "data": {
+    "response_id": "response-123",
+    "content": "I'd be happy to help you with that.",
+    "is_final": false,
+    "chunk_index": 1,
+    "total_chunks": null,
+    "metadata": {
+      "model": "nextevi-v1",
+      "tokens_used": 12
+    }
+  }
+}
+```
+
+<ResponseField name="data.response_id" type="string" required>
+  Unique identifier for the complete response
+</ResponseField>
+
+<ResponseField name="data.content" type="string" required>
+  Text content of this chunk
+</ResponseField>
+
+<ResponseField name="data.is_final" type="boolean">
+  Whether this is the final chunk of the response
+</ResponseField>
+
+<ResponseField name="data.chunk_index" type="number">
+  Sequential index of this chunk
+</ResponseField>
+
+### Audio Output
+
+Text-to-speech audio data:
+
+```json
+{
+  "type": "audio_output",
+  "timestamp": 1645123456.789,
+  "message_id": "audio-out-001",
+  "data": {
+    "audio": "base64-encoded-audio-data",
+    "response_id": "response-123",
+    "chunk_index": 1,
+    "is_final": false,
+    "audio_format": {
+      "sample_rate": 24000,
+      "channels": 1,
+      "encoding": "linear16"
+    },
+    "text_content": "I'd be happy to help you with that.",
+    "voice_id": "emily",
+    "emotions": {
+      "joy": 0.4,
+      "empathy": 0.6
+    }
+  }
+}
+```
+
+<ResponseField name="data.audio" type="string" required>
+  Base64-encoded audio data
+</ResponseField>
+
+<ResponseField name="data.response_id" type="string">
+  Links audio to corresponding LLM response
+</ResponseField>
+
+<ResponseField name="data.text_content" type="string">
+  Text that was synthesized to audio
+</ResponseField>
+
+<ResponseField name="data.voice_id" type="string">
+  Voice model used for synthesis
+</ResponseField>
+
+### Emotion Update
+
+Real-time emotion detection results:
+
+```json
+{
+  "type": "emotion_update",
+  "timestamp": 1645123456.789,
+  "message_id": "emotion-001",
+  "data": {
+    "emotions": {
+      "joy": 0.2,
+      "sadness": 0.1,
+      "anger": 0.05,
+      "fear": 0.05,
+      "surprise": 0.1,
+      "disgust": 0.02,
+      "neutral": 0.48
+    },
+    "dominant_emotion": "neutral",
+    "confidence": 0.85,
+    "source": "voice_analysis",
+    "time_window": {
+      "start_time": 1645123455.000,
+      "end_time": 1645123456.500
+    }
+  }
+}
+```
+
+<ResponseField name="data.emotions" type="object" required>
+  Emotion scores (0-1) for each detected emotion
+</ResponseField>
+
+<ResponseField name="data.dominant_emotion" type="string">
+  The emotion with the highest score
+</ResponseField>
+
+<ResponseField name="data.confidence" type="number">
+  Overall confidence in emotion detection
+</ResponseField>
+
+<ResponseField name="data.source" type="string">
+  Source of emotion analysis ("voice_analysis", "text_analysis")
+</ResponseField>
+
+### Connection Metadata
+
+Connection and session information:
+
+```json
+{
+  "type": "connection_metadata",
+  "timestamp": 1645123456.789,
+  "message_id": "metadata-001",
+  "data": {
+    "session_id": "session-abc123",
+    "connection_id": "conn-xyz789",
+    "config_id": "config-456",
+    "project_id": "project-123",
+    "server_info": {
+      "version": "1.2.0",
+      "region": "us-east-1"
+    },
+    "capabilities": {
+      "emotion_detection": true,
+      "turn_detection": true,
+      "interruption_handling": true,
+      "multiple_voices": true
+    }
+  }
+}
+```
+
+### Status Messages
+
+System status and lifecycle events:
+
+```json
+{
+  "type": "status",
+  "timestamp": 1645123456.789,
+  "message_id": "status-001",
+  "data": {
+    "status": "session_started",
+    "message": "Voice session initialized successfully",
+    "details": {
+      "audio_config": {
+        "sample_rate": 24000,
+        "channels": 1
+      },
+      "features_enabled": ["emotions", "turn_detection"]
+    }
+  }
+}
+```
+
+**Common Status Types:**
+- `session_started` - Session successfully initialized
+- `audio_started` - Audio processing began
+- `audio_stopped` - Audio processing ended
+- `turn_detected` - Speaking turn change detected
+- `idle_warning` - Approaching idle timeout
+- `session_timeout` - Session timed out due to inactivity
+
+### Error Messages
+
+Error information and recovery guidance:
+
+```json
+{
+  "type": "error",
+  "timestamp": 1645123456.789,
+  "message_id": "error-001",
+  "data": {
+    "error_code": "TRANSCRIPTION_FAILED",
+    "error_message": "Failed to transcribe audio: insufficient audio quality",
+    "details": {
+      "audio_quality_score": 0.2,
+      "suggested_actions": [
+        "Check microphone connection",
+        "Reduce background noise",
+        "Move closer to microphone"
+      ]
+    },
+    "recoverable": true,
+    "retry_after": 1000
+  }
+}
+```
+
+<ResponseField name="data.error_code" type="string" required>
+  Machine-readable error code
+</ResponseField>
+
+<ResponseField name="data.error_message" type="string" required>
+  Human-readable error description
+</ResponseField>
+
+<ResponseField name="data.recoverable" type="boolean">
+  Whether the error condition can be recovered from
+</ResponseField>
+
+<ResponseField name="data.retry_after" type="number">
+  Suggested retry delay in milliseconds
+</ResponseField>
+
+## Error Codes
+
+Common error codes you may encounter:
+
+| Code | Description | Recoverable |
+|------|-------------|-------------|
+| `AUTH_REQUIRED` | No authentication provided | No |
+| `AUTH_INVALID` | Invalid credentials | No |
+| `CONFIG_NOT_FOUND` | Voice configuration not found | No |
+| `RATE_LIMITED` | Request rate limit exceeded | Yes |
+| `AUDIO_FORMAT_ERROR` | Invalid audio format | No |
+| `TRANSCRIPTION_FAILED` | STT processing failed | Yes |
+| `TTS_FAILED` | Audio synthesis failed | Yes |
+| `SESSION_EXPIRED` | Session token expired | No |
+| `MICROPHONE_ERROR` | Microphone access issues | Yes |
+| `NETWORK_ERROR` | Network connectivity issues | Yes |
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Connection Management" icon="plug">
+    - Implement exponential backoff for reconnection attempts
+    - Handle network interruptions gracefully
+    - Send keep-alive messages during periods of silence
+    - Close connections properly to free server resources
+  </Accordion>
+  
+  <Accordion title="Audio Streaming" icon="waveform">
+    - Send audio chunks at regular intervals (e.g., every 100ms)
+    - Use appropriate chunk sizes (recommended: 1024-2048 bytes)
+    - Maintain consistent sample rate throughout session
+    - Handle audio buffer overflow/underflow conditions
+  </Accordion>
+  
+  <Accordion title="Message Handling" icon="envelope">
+    - Process messages in order using message_id and timestamp
+    - Handle partial messages (streaming responses)
+    - Implement message acknowledgment for critical operations
+    - Cache messages for replay functionality
+  </Accordion>
+  
+  <Accordion title="Error Recovery" icon="refresh">
+    - Implement retry logic with exponential backoff
+    - Handle rate limiting appropriately
+    - Provide user feedback for recoverable errors
+    - Log errors for debugging and monitoring
+  </Accordion>
+</AccordionGroup>
+
+## WebSocket Libraries
+
+Recommended WebSocket libraries for different platforms:
+
+<Tabs>
+  <Tab title="JavaScript/Browser">
+    ```javascript
+    // Native WebSocket API
+    const ws = new WebSocket('wss://api.nextevi.com/voice/websocket/conn-123');
+    
+    // With reconnection library
+    import ReconnectingWebSocket from 'reconnecting-websocket';
+    const ws = new ReconnectingWebSocket('wss://api.nextevi.com/voice/websocket/conn-123');
+    ```
+  </Tab>
+  
+  <Tab title="Node.js">
+    ```javascript
+    const WebSocket = require('ws');
+    const ws = new WebSocket('wss://api.nextevi.com/voice/websocket/conn-123');
+    ```
+  </Tab>
+  
+  <Tab title="Python">
+    ```python
+    import asyncio
+    import websockets
+    
+    async def connect():
+        uri = "wss://api.nextevi.com/voice/websocket/conn-123"
+        async with websockets.connect(uri) as websocket:
+            # Handle messages
+            pass
+    ```
+  </Tab>
+  
+  <Tab title="React Native">
+    ```javascript
+    // Native WebSocket support
+    const ws = new WebSocket('wss://api.nextevi.com/voice/websocket/conn-123');
+    
+    // Or with enhanced library
+    import { w3cwebsocket as WebSocket } from "websocket";
+    const ws = new WebSocket('wss://api.nextevi.com/voice/websocket/conn-123');
+    ```
+  </Tab>
+</Tabs>
+
+## Testing
+
+Use our WebSocket testing tools:
+
+<CardGroup cols={2}>
+  <Card title="WebSocket Tester" icon="play" href="https://api.nextevi.com/voice/test">
+    Interactive WebSocket connection tester
+  </Card>
+  <Card title="Postman Collection" icon="download" href="https://api.nextevi.com/postman/voice-websocket.json">
+    Postman collection for WebSocket testing
+  </Card>
+</CardGroup>
