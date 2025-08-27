@@ -3,80 +3,122 @@ title: "NextEVI: Voice AI Platform"
 description: "Build intelligent voice applications with NextEVI's powerful real-time voice AI platform"
 ---
 
-# Welcome to NextEVI
+# NextEVI: Voice AI for Developers
 
-NextEVI is a comprehensive voice AI platform that enables developers to build sophisticated voice applications with real-time speech processing, natural language understanding, and expressive text-to-speech synthesis.
+**Build voice AI applications in minutes, not months.** NextEVI provides everything you need to add intelligent voice conversations to your applications with just a few lines of code.
 
-## What is NextEVI?
+```tsx
+import { useVoice } from '@nextevi/voice-react';
 
-NextEVI combines cutting-edge AI technologies into a unified platform for voice-first applications:
+function VoiceChat() {
+  const { connect, messages, isRecording } = useVoice();
+  
+  return (
+    <div>
+      <button onClick={() => connect({ 
+        auth: { apiKey: "oak_key", configId: "config" } 
+      })}>
+        Start Voice Chat
+      </button>
+      {messages.map(msg => <div key={msg.id}>{msg.content}</div>)}
+    </div>
+  );
+}
+```
 
-- **Speech to Speech (EVI)**: Full-duplex voice conversations with emotion recognition and intelligent turn detection
-- **Multi-Engine TTS**: Choose from multiple high-quality text-to-speech engines optimized for different use cases
-- **React SDK**: Comprehensive React components and hooks for rapid voice integration
-- **WebSocket API**: Real-time bidirectional communication for custom implementations
-- **Scalable Architecture**: Production-ready infrastructure supporting concurrent voice sessions
-
-## Key Features
+## Why Choose NextEVI?
 
 <CardGroup cols={2}>
-  <Card title="Speech to Speech (EVI)" icon="comments" href="/speech-to-speech/introduction">
-    Real-time voice conversations with emotion recognition and natural flow
+  <Card title="5-Minute Integration" icon="clock">
+    React SDK and WebSocket API - get voice AI running instantly
   </Card>
-  <Card title="Multiple TTS Engines" icon="volume-high" href="/tts/introduction">
-    Orpheus, Parler, Kokoro, and Higgs engines for diverse voice synthesis needs
+  <Card title="Emotion Intelligence" icon="heart">
+    Real-time emotion detection for empathetic AI responses
   </Card>
-  <Card title="React SDK" icon="react" href="/speech-to-speech/react-sdk/installation">
-    Comprehensive React components and hooks for voice integration
+  <Card title="Production Ready" icon="shield">
+    Scalable infrastructure handling thousands of concurrent conversations
   </Card>
-  <Card title="Emotion Recognition" icon="heart" href="/speech-to-speech/features/emotions">
-    Advanced emotion analysis from speech for empathetic AI responses
+  <Card title="Developer First" icon="code">
+    Clean APIs, TypeScript support, comprehensive documentation
   </Card>
 </CardGroup>
 
-## Use Cases
+## Platform Overview
 
-NextEVI powers a wide range of voice AI applications:
+**Speech-to-Speech (EVI)**: Full-duplex voice conversations with emotion recognition, turn detection, and natural interruption handling.
 
-**Customer Service**: Build intelligent voice assistants that understand customer emotions and provide empathetic responses.
+**Text-to-Speech**: High-quality voice synthesis with multiple engines optimized for different use cases.
 
-**Educational Platforms**: Create interactive learning experiences with real-time feedback and personalized voice interactions.
+**Developer Tools**: React SDK, WebSocket API, comprehensive examples, and debugging utilities.
 
-**Healthcare Applications**: Develop voice-enabled health monitoring tools with emotion-aware conversations.
+## What You Can Build
 
-**Entertainment & Gaming**: Build immersive voice characters with dynamic emotional expressions and natural conversation flow.
+<CardGroup cols={3}>
+  <Card title="Customer Support" icon="headset" href="/speech-to-speech/examples#customer-support">
+    Emotion-aware support bots with escalation detection
+  </Card>
+  <Card title="Voice Tutors" icon="graduation-cap" href="/speech-to-speech/examples#educational-tutor">
+    Adaptive learning with engagement tracking
+  </Card>
+  <Card title="Healthcare Assistants" icon="heart-pulse" href="/speech-to-speech/examples#healthcare-assistant">
+    Empathetic health monitoring and wellness tracking
+  </Card>
+  <Card title="Gaming Characters" icon="gamepad">
+    Immersive NPCs with dynamic emotional responses
+  </Card>
+  <Card title="Accessibility Tools" icon="universal-access">
+    Voice-first interfaces for inclusive experiences
+  </Card>
+  <Card title="Smart Assistants" icon="robot">
+    Custom voice AI for any domain or use case
+  </Card>
+</CardGroup>
 
-**Accessibility Tools**: Create voice-first interfaces that provide inclusive experiences for all users.
+## Technical Features
 
-## Getting Started
+- **Real-time Processing**: Sub-200ms latency for natural conversations
+- **Emotion Detection**: 9 emotions with confidence scoring
+- **Turn Detection**: Intelligent conversation flow with interruption handling
+- **Multi-platform**: React, WebSocket, REST APIs for any stack
+- **TypeScript**: Full type safety and IntelliSense support
+- **Production Scale**: Handle thousands of concurrent voice sessions
+
+## Get Started in 5 Minutes
 
 <Steps>
-  <Step title="Get Your API Key">
-    Sign up for a NextEVI account and obtain your API credentials from the dashboard.
+  <Step title="Get API Key">
+    Sign up at [NextEVI Dashboard](https://dashboard.nextevi.com) and copy your API credentials
   </Step>
-  <Step title="Choose Your Integration">
-    Select between React SDK for quick integration or WebSocket API for custom implementations.
+  <Step title="Install SDK">
+    ```bash
+    npm install @nextevi/voice-react
+    ```
   </Step>
-  <Step title="Start Building">
-    Use our SDKs and examples to quickly integrate voice AI into your application.
+  <Step title="Add Voice Chat">
+    ```tsx
+    const { connect, messages } = useVoice();
+    await connect({ auth: { apiKey: "oak_key", configId: "config" } });
+    ```
   </Step>
 </Steps>
 
+## Start Building
 
-## Next Steps
-
-<CardGroup cols={3}>
-  <Card title="Quick Start" icon="rocket" href="/quickstart">
-    Get up and running with NextEVI in 5 minutes
+<CardGroup cols={2}>
+  <Card title="5-Minute Quickstart" icon="rocket" href="/quickstart">
+    Complete voice chat app with working code
   </Card>
-  <Card title="Speech to Speech" icon="comments" href="/speech-to-speech/introduction">
-    Build real-time voice conversations with EVI
+  <Card title="React SDK Guide" icon="react" href="/speech-to-speech/react-sdk">
+    Comprehensive React integration guide
   </Card>
-  <Card title="TTS Services" icon="speaker-wave" href="/tts/getting-started">
-    Explore our text-to-speech capabilities
+  <Card title="WebSocket API" icon="code" href="/speech-to-speech/websocket-api">
+    Direct WebSocket integration for any platform
+  </Card>
+  <Card title="Live Examples" icon="play" href="/speech-to-speech/examples">
+    Customer support, education, healthcare use cases
   </Card>
 </CardGroup>
 
 ---
 
-Ready to build the future of voice AI? Let's get started!
+**Ready to build voice AI?** [Start with our 5-minute quickstart →](/quickstart)

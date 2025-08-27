@@ -1,0 +1,674 @@
+---
+title: "Examples & Use Cases"
+description: "Complete working examples and real-world use cases for NextEVI's voice AI"
+---
+
+## Quick Examples
+
+### Basic Voice Chat (React)
+
+A minimal voice chat implementation:
+
+```tsx
+import React from 'react';
+import { VoiceProvider, useVoice } from '@nextevi/voice-react';
+
+function SimpleVoiceChat() {
+  const { connect, readyState, messages, isRecording } = useVoice();
+
+  return (
+    <div style={{ padding: '20px' }}>
+      <button onClick={() => connect({
+        auth: {
+          apiKey: "oak_your_api_key",
+          projectId: "your-project-id", 
+          configId: "your-config-id"
+        }
+      })}>
+        {readyState === 'connected' ? '🔊 Connected' : '🎤 Start Chat'}
+      </button>
+      
+      {isRecording && <div>🎙️ Listening...</div>}
+      
+      <div style={{ marginTop: '20px', height: '200px', overflow: 'auto' }}>
+        {messages.map(msg => (
+          <div key={msg.id}>
+            <strong>{msg.type === 'user' ? 'You' : 'AI'}:</strong> {msg.content}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <VoiceProvider>
+      <SimpleVoiceChat />
+    </VoiceProvider>
+  );
+}
+```
+
+### WebSocket Voice Connection
+
+Direct WebSocket implementation:
+
+```javascript
+const voice = new WebSocket(
+  `wss://api.nextevi.com/voice/websocket/conn-123?api_key=oak_your_key&config_id=your_config`
+);
+
+voice.onopen = () => {
+  console.log('🎤 Voice AI connected');
+  
+  // Enable features
+  voice.send(JSON.stringify({
+    type: "session_settings",
+    timestamp: Date.now() / 1000,
+    message_id: "init",
+    data: {
+      emotion_detection: { enabled: true },
+      turn_detection: { enabled: true }
+    }
+  }));
+};
+
+voice.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  
+  if (msg.type === 'transcription') {
+    console.log('User said:', msg.data.transcript);
+  } else if (msg.type === 'llm_response_chunk') {
+    console.log('AI response:', msg.data.content);
+  }
+};
+```
+
+---
+
+## Real-World Use Cases
+
+### 1. Customer Support Bot
+
+Emotion-aware customer service with escalation:
+
+```tsx
+import React, { useState, useEffect } from 'react';
+import { useVoice } from '@nextevi/voice-react';
+
+function CustomerSupportBot() {
+  const { connect, messages, readyState } = useVoice();
+  const [emotionalState, setEmotionalState] = useState('neutral');
+  const [escalationRisk, setEscalationRisk] = useState(0);
+
+  useEffect(() => {
+    // Analyze recent emotional patterns
+    const recentMessages = messages.slice(-3)
+      .filter(msg => msg.type === 'user' && msg.metadata?.emotions);
+    
+    const angerLevel = recentMessages
+      .reduce((sum, msg) => sum + (msg.metadata.emotions.anger || 0), 0) / recentMessages.length;
+    
+    if (angerLevel > 0.7) {
+      setEmotionalState('angry');
+      setEscalationRisk(Math.min(escalationRisk + 1, 5));
+    } else if (angerLevel > 0.4) {
+      setEmotionalState('frustrated');
+    } else {
+      setEmotionalState('neutral');
+      setEscalationRisk(Math.max(escalationRisk - 0.5, 0));
+    }
+  }, [messages]);
+
+  const handleConnect = async () => {
+    await connect({
+      auth: {
+        apiKey: process.env.NEXTEVI_API_KEY,
+        projectId: process.env.NEXTEVI_PROJECT_ID,
+        configId: "customer-support-config"
+      },
+      sessionSettings: {
+        emotion_detection: { 
+          enabled: true, 
+          confidence_threshold: 0.6 
+        },
+        response_style: {
+          tone: escalationRisk > 3 ? 'calming' : 'helpful',
+          empathy_level: emotionalState === 'angry' ? 'high' : 'medium'
+        }
+      }
+    });
+  };
+
+  return (
+    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2>Customer Support</h2>
+        <button onClick={handleConnect} disabled={readyState === 'connecting'}>
+          {readyState === 'connected' ? '✅ Connected' : '🎧 Start Support'}
+        </button>
+      </div>
+      
+      {/* Emotional State Dashboard */}
+      <div style={{ 
+        backgroundColor: emotionalState === 'angry' ? '#fef2f2' : 
+                       emotionalState === 'frustrated' ? '#fef3c7' : '#f0f9ff',
+        padding: '12px', 
+        borderRadius: '8px', 
+        marginBottom: '20px',
+        border: `2px solid ${emotionalState === 'angry' ? '#fca5a5' : 
+                             emotionalState === 'frustrated' ? '#fbbf24' : '#93c5fd'}`
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Emotional State: <strong>{emotionalState}</strong></span>
+          <span>Escalation Risk: <strong>{escalationRisk}/5</strong></span>
+        </div>
+        
+        {escalationRisk >= 4 && (
+          <div style={{ marginTop: '8px', color: '#dc2626' }}>
+            ⚠️ High escalation risk - Consider transferring to human agent
+          </div>
+        )}
+      </div>
+      
+      {/* Messages with Emotion Indicators */}
+      <div style={{ height: '400px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px' }}>
+        {messages.map(message => (
+          <div key={message.id} style={{ 
+            marginBottom: '12px',
+            padding: '12px',
+            backgroundColor: message.type === 'user' ? '#eff6ff' : '#f0fdf4',
+            borderRadius: '8px',
+            borderLeft: `4px solid ${message.type === 'user' ? '#3b82f6' : '#22c55e'}`
+          }}>
+            <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+              {message.type === 'user' ? 'Customer' : 'Support Bot'}
+            </div>
+            
+            <div>{message.content}</div>
+            
+            {/* Emotion Indicators */}
+            {message.metadata?.emotions && (
+              <div style={{ marginTop: '8px', fontSize: '12px', color: '#6b7280' }}>
+                {Object.entries(message.metadata.emotions)
+                  .filter(([, score]) => score > 0.2)
+                  .map(([emotion, score]) => (
+                    <span key={emotion} style={{ 
+                      marginRight: '12px',
+                      padding: '2px 6px',
+                      backgroundColor: emotion === 'anger' ? '#fca5a5' : 
+                                     emotion === 'sadness' ? '#a7c3f3' : '#d1fae5',
+                      borderRadius: '12px'
+                    }}>
+                      {emotion}: {(score * 100).toFixed(0)}%
+                    </span>
+                  ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### 2. Educational Voice Tutor
+
+Adaptive learning with emotion-based pacing:
+
+```tsx
+function VoiceTutor() {
+  const { connect, messages, readyState } = useVoice();
+  const [studentEngagement, setStudentEngagement] = useState('medium');
+  const [comprehensionLevel, setComprehensionLevel] = useState('good');
+
+  useEffect(() => {
+    const recentEmotions = messages
+      .slice(-5)
+      .filter(msg => msg.type === 'user' && msg.metadata?.emotions)
+      .map(msg => msg.metadata.emotions);
+
+    if (recentEmotions.length > 0) {
+      const avgConfusion = recentEmotions.reduce((sum, emotions) => 
+        sum + (emotions.confusion || 0), 0) / recentEmotions.length;
+      const avgJoy = recentEmotions.reduce((sum, emotions) => 
+        sum + (emotions.joy || 0), 0) / recentEmotions.length;
+
+      if (avgConfusion > 0.6) {
+        setComprehensionLevel('struggling');
+        setStudentEngagement('low');
+      } else if (avgJoy > 0.5) {
+        setComprehensionLevel('excellent');
+        setStudentEngagement('high');
+      } else {
+        setComprehensionLevel('good');
+        setStudentEngagement('medium');
+      }
+    }
+  }, [messages]);
+
+  const handleConnect = async () => {
+    await connect({
+      auth: {
+        apiKey: process.env.NEXTEVI_API_KEY,
+        configId: "educational-tutor-config"
+      },
+      sessionSettings: {
+        emotion_detection: { enabled: true },
+        response_style: {
+          tone: comprehensionLevel === 'struggling' ? 'encouraging' : 'standard',
+          explanation_detail: comprehensionLevel === 'struggling' ? 'detailed' : 'standard',
+          pacing: studentEngagement === 'low' ? 'slow' : 'normal'
+        }
+      }
+    });
+  };
+
+  return (
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
+        <h2>AI Voice Tutor</h2>
+        <button onClick={handleConnect}>
+          {readyState === 'connected' ? '🎓 Teaching' : '📚 Start Lesson'}
+        </button>
+      </div>
+
+      {/* Student Analytics Dashboard */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+        <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <h3>Comprehension Level</h3>
+          <div style={{ 
+            fontSize: '24px', 
+            fontWeight: 'bold',
+            color: comprehensionLevel === 'excellent' ? '#059669' : 
+                   comprehensionLevel === 'struggling' ? '#dc2626' : '#f59e0b'
+          }}>
+            {comprehensionLevel}
+          </div>
+        </div>
+        
+        <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+          <h3>Student Engagement</h3>
+          <div style={{ 
+            fontSize: '24px', 
+            fontWeight: 'bold',
+            color: studentEngagement === 'high' ? '#059669' : 
+                   studentEngagement === 'low' ? '#dc2626' : '#f59e0b'
+          }}>
+            {studentEngagement}
+          </div>
+        </div>
+      </div>
+
+      {/* Teaching Conversation */}
+      <div style={{ height: '400px', overflowY: 'auto', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '16px' }}>
+        {messages.map(message => (
+          <div key={message.id} style={{ 
+            marginBottom: '16px',
+            display: 'flex',
+            flexDirection: message.type === 'user' ? 'row-reverse' : 'row',
+            alignItems: 'flex-start'
+          }}>
+            <div style={{
+              maxWidth: '70%',
+              padding: '12px',
+              borderRadius: '12px',
+              backgroundColor: message.type === 'user' ? '#3b82f6' : '#22c55e',
+              color: 'white',
+              margin: message.type === 'user' ? '0 0 0 12px' : '0 12px 0 0'
+            }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+                {message.type === 'user' ? '🎓 Student' : '🤖 Tutor'}
+              </div>
+              <div>{message.content}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+### 3. Healthcare Voice Assistant
+
+Empathetic health monitoring with privacy considerations:
+
+```tsx
+function HealthcareVoiceAssistant() {
+  const { connect, messages, readyState } = useVoice();
+  const [wellbeingScore, setWellbeingScore] = useState(50);
+  const [concerningPatterns, setConcerningPatterns] = useState([]);
+
+  useEffect(() => {
+    // Analyze emotional wellbeing patterns
+    const emotionData = messages
+      .filter(msg => msg.type === 'user' && msg.metadata?.emotions)
+      .slice(-10); // Last 10 user messages
+
+    if (emotionData.length > 3) {
+      const avgSadness = emotionData.reduce((sum, msg) => 
+        sum + (msg.metadata.emotions.sadness || 0), 0) / emotionData.length;
+      const avgAnxiety = emotionData.reduce((sum, msg) => 
+        sum + (msg.metadata.emotions.fear || 0), 0) / emotionData.length;
+      const avgJoy = emotionData.reduce((sum, msg) => 
+        sum + (msg.metadata.emotions.joy || 0), 0) / emotionData.length;
+
+      // Calculate wellbeing score (0-100)
+      const score = Math.max(0, Math.min(100, 
+        50 + (avgJoy * 50) - (avgSadness * 30) - (avgAnxiety * 20)
+      ));
+      setWellbeingScore(Math.round(score));
+
+      // Identify concerning patterns
+      const patterns = [];
+      if (avgSadness > 0.6) patterns.push('persistent_sadness');
+      if (avgAnxiety > 0.7) patterns.push('high_anxiety');
+      if (avgJoy < 0.1 && avgSadness > 0.4) patterns.push('low_mood');
+      
+      setConcerningPatterns(patterns);
+    }
+  }, [messages]);
+
+  const handleConnect = async () => {
+    await connect({
+      auth: {
+        apiKey: process.env.NEXTEVI_API_KEY,
+        configId: "healthcare-assistant-config"
+      },
+      sessionSettings: {
+        emotion_detection: { 
+          enabled: true,
+          privacy_mode: true // Enhanced privacy for healthcare
+        },
+        response_style: {
+          tone: 'empathetic',
+          medical_disclaimer: true,
+          privacy_aware: true
+        }
+      }
+    });
+  };
+
+  return (
+    <div style={{ maxWidth: '700px', margin: '0 auto', padding: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+        <h2>🏥 Healthcare Voice Assistant</h2>
+        <button onClick={handleConnect} style={{
+          padding: '10px 20px',
+          backgroundColor: readyState === 'connected' ? '#059669' : '#3b82f6',
+          color: 'white',
+          border: 'none',
+          borderRadius: '6px'
+        }}>
+          {readyState === 'connected' ? '✅ Connected' : '🩺 Start Consultation'}
+        </button>
+      </div>
+
+      {/* Privacy Notice */}
+      <div style={{ 
+        backgroundColor: '#fef3c7', 
+        border: '1px solid #fbbf24', 
+        padding: '12px', 
+        borderRadius: '8px', 
+        marginBottom: '20px',
+        fontSize: '14px'
+      }}>
+        <strong>Privacy Notice:</strong> This assistant uses emotion detection for better care. 
+        Your emotional data is processed securely and not stored permanently. 
+        This is not a substitute for professional medical advice.
+      </div>
+
+      {/* Wellbeing Dashboard */}
+      <div style={{ 
+        display: 'grid', 
+        gridTemplateColumns: '2fr 1fr', 
+        gap: '16px', 
+        marginBottom: '20px' 
+      }}>
+        <div style={{ 
+          padding: '16px', 
+          backgroundColor: '#f0f9ff', 
+          borderRadius: '8px', 
+          border: '1px solid #bae6fd' 
+        }}>
+          <h3>Wellbeing Score</h3>
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ 
+              fontSize: '32px', 
+              fontWeight: 'bold',
+              color: wellbeingScore >= 70 ? '#059669' : 
+                     wellbeingScore >= 40 ? '#f59e0b' : '#dc2626',
+              marginRight: '12px'
+            }}>
+              {wellbeingScore}/100
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ 
+                width: '100%', 
+                height: '8px', 
+                backgroundColor: '#e5e7eb', 
+                borderRadius: '4px',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  width: `${wellbeingScore}%`,
+                  height: '100%',
+                  backgroundColor: wellbeingScore >= 70 ? '#059669' : 
+                                 wellbeingScore >= 40 ? '#f59e0b' : '#dc2626',
+                  transition: 'width 0.3s ease'
+                }} />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style={{ 
+          padding: '16px', 
+          backgroundColor: concerningPatterns.length > 0 ? '#fef2f2' : '#f0fdf4', 
+          borderRadius: '8px', 
+          border: `1px solid ${concerningPatterns.length > 0 ? '#fca5a5' : '#bbf7d0'}` 
+        }}>
+          <h3>Status</h3>
+          <div style={{ 
+            color: concerningPatterns.length > 0 ? '#dc2626' : '#059669',
+            fontWeight: 'bold'
+          }}>
+            {concerningPatterns.length > 0 ? '⚠️ Needs Attention' : '✅ Stable'}
+          </div>
+        </div>
+      </div>
+
+      {/* Concerning Patterns Alert */}
+      {concerningPatterns.length > 0 && (
+        <div style={{ 
+          backgroundColor: '#fef2f2', 
+          border: '1px solid #fca5a5', 
+          padding: '12px', 
+          borderRadius: '8px', 
+          marginBottom: '20px' 
+        }}>
+          <strong>Detected Patterns:</strong>
+          <ul style={{ margin: '8px 0 0 20px' }}>
+            {concerningPatterns.map(pattern => (
+              <li key={pattern} style={{ color: '#dc2626' }}>
+                {pattern.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </li>
+            ))}
+          </ul>
+          <div style={{ marginTop: '8px', fontSize: '14px' }}>
+            Consider speaking with a healthcare professional for additional support.
+          </div>
+        </div>
+      )}
+
+      {/* Conversation */}
+      <div style={{ 
+        height: '350px', 
+        overflowY: 'auto', 
+        border: '1px solid #e5e7eb', 
+        borderRadius: '8px', 
+        padding: '16px',
+        backgroundColor: 'white'
+      }}>
+        {messages.map(message => (
+          <div key={message.id} style={{ marginBottom: '16px' }}>
+            <div style={{
+              padding: '12px',
+              backgroundColor: message.type === 'user' ? '#eff6ff' : '#f0fdf4',
+              borderRadius: '8px',
+              borderLeft: `4px solid ${message.type === 'user' ? '#3b82f6' : '#22c55e'}`
+            }}>
+              <div style={{ fontWeight: 'bold', marginBottom: '4px', display: 'flex', alignItems: 'center' }}>
+                {message.type === 'user' ? '👤 You' : '🩺 Assistant'}
+                {message.metadata?.emotions && (
+                  <span style={{ 
+                    marginLeft: '8px', 
+                    fontSize: '12px', 
+                    color: '#6b7280',
+                    backgroundColor: 'white',
+                    padding: '2px 6px',
+                    borderRadius: '10px',
+                    border: '1px solid #e5e7eb'
+                  }}>
+                    Mood detected
+                  </span>
+                )}
+              </div>
+              <div>{message.content}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## Integration Patterns
+
+### Environment Configuration
+
+```javascript
+// .env.local
+NEXTEVI_API_KEY=oak_your_api_key
+NEXTEVI_PROJECT_ID=your-project-id
+NEXTEVI_CONFIG_ID=your-config-id
+
+// config.js
+export const nextEVIConfig = {
+  development: {
+    apiKey: process.env.NEXTEVI_API_KEY,
+    projectId: process.env.NEXTEVI_PROJECT_ID,
+    configId: process.env.NEXTEVI_CONFIG_ID,
+    debug: true
+  },
+  production: {
+    // Use JWT tokens in production
+    getAuthToken: async () => {
+      const response = await fetch('/api/nextevi-token');
+      const { token } = await response.json();
+      return token;
+    },
+    configId: process.env.NEXTEVI_CONFIG_ID,
+    debug: false
+  }
+};
+```
+
+### Error Boundary
+
+```tsx
+import React from 'react';
+
+class VoiceErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('Voice AI Error:', error, errorInfo);
+    
+    // Log to your error reporting service
+    if (window.errorReporting) {
+      window.errorReporting.captureException(error);
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          <h2>Voice Assistant Unavailable</h2>
+          <p>Something went wrong with the voice AI connection.</p>
+          <button onClick={() => window.location.reload()}>
+            Reload Page
+          </button>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
+// Usage
+function App() {
+  return (
+    <VoiceErrorBoundary>
+      <VoiceProvider>
+        <VoiceChat />
+      </VoiceProvider>
+    </VoiceErrorBoundary>
+  );
+}
+```
+
+---
+
+## Best Practices Summary
+
+<AccordionGroup>
+  <Accordion title="User Experience" icon="user">
+    - Always show connection status clearly to users
+    - Provide visual feedback for microphone activity
+    - Handle permissions gracefully with helpful instructions
+    - Implement loading states and error recovery
+    - Test across different devices and browsers
+  </Accordion>
+  
+  <Accordion title="Performance" icon="gauge-high">
+    - Use React.memo for message components
+    - Implement virtual scrolling for long conversations
+    - Clean up connections when components unmount
+    - Optimize audio processing for mobile devices
+    - Monitor memory usage with long-running sessions
+  </Accordion>
+  
+  <Accordion title="Security" icon="shield">
+    - Never expose API keys in client-side production code
+    - Use JWT tokens for client authentication
+    - Implement proper CORS policies
+    - Validate user permissions server-side
+    - Use HTTPS for all connections
+  </Accordion>
+  
+  <Accordion title="Privacy & Ethics" icon="heart">
+    - Always inform users about emotion detection
+    - Provide options to disable emotion tracking
+    - Handle emotional data with appropriate sensitivity
+    - Implement data retention policies
+    - Consider cultural differences in emotional expression
+  </Accordion>
+</AccordionGroup>
+
+These examples provide a solid foundation for building sophisticated voice AI applications with NextEVI across different industries and use cases.

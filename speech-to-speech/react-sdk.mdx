@@ -1,0 +1,722 @@
+---
+title: "React SDK Guide"
+description: "Complete guide to NextEVI's React SDK - installation, hooks, and advanced features"
+---
+
+## Installation
+
+<CodeGroup>
+```bash npm
+npm install @nextevi/voice-react
+```
+
+```bash yarn  
+yarn add @nextevi/voice-react
+```
+
+```bash pnpm
+pnpm add @nextevi/voice-react
+```
+</CodeGroup>
+
+## Prerequisites
+
+<AccordionGroup>
+  <Accordion title="NextEVI API Credentials" icon="key">
+    Get your credentials from the [NextEVI Dashboard](https://dashboard.nextevi.com):
+    - **API Key**: Organization key (starts with `oak_`)
+    - **Project ID**: Your project identifier  
+    - **Config ID**: Voice configuration identifier
+  </Accordion>
+  
+  <Accordion title="Browser Support" icon="globe">
+    Requires modern browsers with:
+    - WebSocket API, Web Audio API, MediaDevices API
+    - Chrome 66+, Firefox 76+, Safari 14.1+, Edge 79+
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Quick Start
+
+### 1. Basic Setup
+
+```tsx
+import React from 'react';
+import { VoiceProvider, useVoice } from '@nextevi/voice-react';
+
+function VoiceChat() {
+  const { connect, disconnect, readyState, messages, isRecording } = useVoice();
+
+  const handleConnect = async () => {
+    await connect({
+      auth: {
+        apiKey: "oak_your_api_key_here",
+        projectId: "your-project-id",
+        configId: "your-config-id"
+      }
+    });
+  };
+
+  return (
+    <div>
+      <button onClick={readyState === 'connected' ? disconnect : handleConnect}>
+        {readyState === 'connected' ? 'Disconnect' : 'Start Voice Chat'}
+      </button>
+      
+      <div>Status: {readyState} {isRecording && '🎤'}</div>
+      
+      <div style={{ height: '300px', overflowY: 'scroll' }}>
+        {messages.map(message => (
+          <div key={message.id}>
+            <strong>{message.type === 'user' ? 'You' : 'AI'}:</strong> {message.content}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <VoiceProvider debug={true}>
+      <VoiceChat />
+    </VoiceProvider>
+  );
+}
+```
+
+### 2. Environment Variables (Recommended)
+
+```bash .env.local
+NEXTEVI_API_KEY=oak_your_api_key
+NEXTEVI_PROJECT_ID=your-project-id
+NEXTEVI_CONFIG_ID=your-config-id
+```
+
+```tsx
+import { configFromEnvironment } from '@nextevi/voice-react';
+
+const handleConnect = async () => {
+  const envConfig = configFromEnvironment();
+  await connect({ auth: envConfig });
+};
+```
+
+---
+
+## Core Hooks Reference
+
+### `useVoice` - Main Hook
+
+The primary hook for voice interactions:
+
+```tsx
+const {
+  connect,
+  disconnect,
+  readyState,
+  messages,
+  isRecording,
+  isTTSPlaying,
+  isWaitingForResponse,
+  error,
+  clearMessages,
+  sendMessage
+} = useVoice();
+```
+
+<ResponseField name="connect" type="function">
+  Establishes voice connection with authentication and configuration
+  
+  ```tsx
+  await connect({
+    auth: {
+      apiKey: "oak_your_api_key",
+      projectId: "your-project-id",
+      configId: "your-config-id"
+    },
+    audioConfig?: {
+      sampleRate: 24000,
+      echoCancellation: true
+    }
+  })
+  ```
+</ResponseField>
+
+<ResponseField name="readyState" type="string">
+  Connection state: `'disconnected'`, `'connecting'`, `'connected'`, `'error'`
+</ResponseField>
+
+<ResponseField name="messages" type="VoiceMessage[]">
+  Array of conversation messages with emotion data and metadata
+</ResponseField>
+
+<ResponseField name="isRecording" type="boolean">
+  Whether microphone is actively capturing audio
+</ResponseField>
+
+### `useVoiceMessages` - Message Management
+
+Enhanced message handling with filtering utilities:
+
+```tsx
+const {
+  messages,
+  userMessages,
+  assistantMessages,
+  lastMessage,
+  messageCount,
+  clearMessages
+} = useVoiceMessages();
+```
+
+### `useVoiceAudio` - Audio State
+
+Monitor audio activity:
+
+```tsx
+const {
+  isRecording,
+  isTTSPlaying,
+  hasAudioActivity
+} = useVoiceAudio();
+```
+
+### `useVoiceTurnDetection` - Conversation Flow
+
+Access turn detection data for natural conversation flow:
+
+```tsx
+const {
+  isUserTurn,
+  isAssistantTurn,
+  turnDuration,
+  silenceDuration,
+  lastTurnChange
+} = useVoiceTurnDetection();
+```
+
+<ResponseField name="isUserTurn" type="boolean">
+  Whether it's currently the user's turn to speak
+</ResponseField>
+
+<ResponseField name="turnDuration" type="number">
+  Duration of current turn in milliseconds
+</ResponseField>
+
+<ResponseField name="silenceDuration" type="number">
+  Duration of current silence in milliseconds
+</ResponseField>
+
+---
+
+## Advanced Features
+
+### Emotion Recognition
+
+Access real-time emotion data from user messages:
+
+```tsx
+function EmotionDisplay({ message }) {
+  if (!message.metadata?.emotions) return null;
+  
+  const emotions = message.metadata.emotions;
+  const dominantEmotion = Object.entries(emotions)
+    .reduce((a, b) => a[1] > b[1] ? a : b)[0];
+
+  return (
+    <div>
+      <span>Detected emotion: {dominantEmotion}</span>
+      <div>
+        {Object.entries(emotions).map(([emotion, score]) => (
+          <div key={emotion}>
+            {emotion}: {(score * 100).toFixed(1)}%
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function VoiceChat() {
+  const { messages } = useVoice();
+  
+  return (
+    <div>
+      {messages.map(message => (
+        <div key={message.id}>
+          <div>{message.content}</div>
+          <EmotionDisplay message={message} />
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Session Configuration
+
+Configure advanced voice processing features:
+
+```tsx
+await connect({
+  auth: authConfig,
+  sessionSettings: {
+    emotion_detection: {
+      enabled: true,
+      confidence_threshold: 0.7
+    },
+    turn_detection: {
+      enabled: true,
+      silence_threshold: 0.5,
+      interrupt_threshold: 0.8
+    },
+    idle_timeout: {
+      enabled: true,
+      timeout_seconds: 300,
+      warning_seconds: 30
+    }
+  }
+});
+```
+
+### Audio Configuration
+
+Customize audio processing:
+
+```tsx
+await connect({
+  auth: authConfig,
+  audioConfig: {
+    sampleRate: 24000,
+    channels: 1,
+    encoding: 'linear16',
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: false
+  }
+});
+```
+
+---
+
+## Authentication Methods
+
+<Tabs>
+  <Tab title="API Key (Development)">
+    ```tsx
+    await connect({
+      auth: {
+        apiKey: "oak_your_api_key",
+        projectId: "your-project-id",
+        configId: "your-config-id"
+      }
+    });
+    ```
+    
+    <Warning>
+    Never expose API keys in production client-side code. Use JWT tokens instead.
+    </Warning>
+  </Tab>
+
+  <Tab title="JWT Token (Production)">
+    ```tsx
+    await connect({
+      auth: {
+        accessToken: "your_jwt_token",
+        configId: "your-config-id",
+        projectId: "your-project-id" // optional
+      }
+    });
+    ```
+    
+    <Tip>
+    JWT tokens provide secure client-side authentication with user-specific permissions.
+    </Tip>
+  </Tab>
+</Tabs>
+
+---
+
+## Error Handling
+
+Comprehensive error handling for voice connections:
+
+```tsx
+const handleConnect = async () => {
+  try {
+    await connect({ auth: config });
+  } catch (error) {
+    switch (error.code) {
+      case 'MICROPHONE_ACCESS_DENIED':
+        // Guide user to enable microphone permissions
+        showMicrophonePermissionGuide();
+        break;
+      case 'AUTHENTICATION_FAILED':
+        // Invalid credentials
+        handleAuthError();
+        break;
+      case 'NETWORK_ERROR':
+        // Connection issues
+        handleNetworkError();
+        break;
+      case 'CONFIG_NOT_FOUND':
+        // Invalid configuration
+        handleConfigError();
+        break;
+      default:
+        console.error('Connection failed:', error);
+        handleGenericError();
+    }
+  }
+};
+
+// Monitor ongoing errors
+const { error } = useVoice();
+
+useEffect(() => {
+  if (error) {
+    console.error('Voice error:', error);
+    // Handle runtime errors
+  }
+}, [error]);
+```
+
+---
+
+## TypeScript Support
+
+Complete TypeScript definitions included:
+
+```tsx
+import { VoiceMessage, NextEVIConfig, EmotionData } from '@nextevi/voice-react';
+
+interface VoiceMessage {
+  id: string;
+  type: 'user' | 'assistant' | 'system' | 'error';
+  content: string;
+  timestamp: Date;
+  metadata?: {
+    emotions?: EmotionData;
+    turnInfo?: {
+      duration: number;
+      confidence: number;
+      interrupted?: boolean;
+    };
+  };
+}
+
+interface NextEVIConfig {
+  auth: {
+    apiKey?: string;
+    accessToken?: string;
+    projectId?: string;
+    configId: string;
+  };
+  audioConfig?: AudioConfig;
+  sessionSettings?: SessionSettings;
+}
+```
+
+---
+
+## Development Utilities
+
+Built-in debugging and development tools:
+
+```tsx
+import { devUtils } from '@nextevi/voice-react';
+
+// Check browser compatibility
+const browserInfo = devUtils.checkEnvironment();
+console.log('Browser supported:', browserInfo.isSupported);
+
+// Test microphone access
+const micAccess = await devUtils.testMicrophone();
+console.log('Microphone available:', micAccess);
+
+// Validate configuration before connecting
+const isValid = devUtils.validateConfiguration(config);
+```
+
+### Debug Mode
+
+Enable detailed logging and debugging:
+
+```tsx
+<VoiceProvider debug={true}>
+  <App />
+</VoiceProvider>
+```
+
+---
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Performance Optimization" icon="gauge-high">
+    - Use `React.memo` for message components to prevent unnecessary re-renders
+    - Implement virtual scrolling for long conversation histories
+    - Clean up connections when components unmount
+    - Use specialized hooks (`useVoiceAudio`, `useVoiceMessages`) when you only need specific data
+  </Accordion>
+  
+  <Accordion title="User Experience" icon="user">
+    - Show clear connection status to users
+    - Provide visual feedback for audio activity (recording/playing)
+    - Handle microphone permissions gracefully with clear instructions
+    - Implement loading states during connection and processing
+  </Accordion>
+  
+  <Accordion title="Error Handling" icon="exclamation-triangle">
+    - Always handle connection errors in your UI
+    - Implement retry logic for network issues
+    - Validate configuration before attempting connection
+    - Provide helpful error messages to users
+  </Accordion>
+  
+  <Accordion title="Security" icon="shield">
+    - Never expose API keys in client-side production code
+    - Use JWT tokens for client-side authentication
+    - Validate user permissions on your backend
+    - Implement rate limiting and abuse protection
+  </Accordion>
+</AccordionGroup>
+
+---
+
+## Complete Working Example
+
+Here's a full-featured voice chat implementation:
+
+```tsx
+import React, { useState, useEffect } from 'react';
+import { VoiceProvider, useVoice, useVoiceAudio, useVoiceTurnDetection } from '@nextevi/voice-react';
+
+function VoiceChatInterface() {
+  const { connect, disconnect, readyState, messages, error, clearMessages } = useVoice();
+  const { isRecording, isTTSPlaying } = useVoiceAudio();
+  const { isUserTurn, isAssistantTurn } = useVoiceTurnDetection();
+  const [isConnecting, setIsConnecting] = useState(false);
+
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    try {
+      await connect({
+        auth: {
+          apiKey: process.env.NEXTEVI_API_KEY,
+          projectId: process.env.NEXTEVI_PROJECT_ID,
+          configId: process.env.NEXTEVI_CONFIG_ID
+        },
+        sessionSettings: {
+          emotion_detection: { enabled: true },
+          turn_detection: { enabled: true }
+        }
+      });
+    } catch (err) {
+      console.error('Connection failed:', err);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const getStatusColor = () => {
+    switch (readyState) {
+      case 'connected': return '#22c55e';
+      case 'connecting': return '#f59e0b';
+      case 'error': return '#ef4444';
+      default: return '#6b7280';
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+      {/* Header */}
+      <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+        <h1>NextEVI Voice Chat</h1>
+        <div style={{ 
+          padding: '10px 20px', 
+          backgroundColor: getStatusColor(), 
+          color: 'white', 
+          borderRadius: '20px',
+          display: 'inline-block',
+          marginBottom: '10px'
+        }}>
+          Status: {readyState}
+        </div>
+      </div>
+
+      {/* Controls */}
+      <div style={{ marginBottom: '20px', textAlign: 'center' }}>
+        <button 
+          onClick={readyState === 'connected' ? disconnect : handleConnect}
+          disabled={isConnecting}
+          style={{
+            padding: '12px 24px',
+            fontSize: '16px',
+            backgroundColor: readyState === 'connected' ? '#ef4444' : '#3b82f6',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            marginRight: '10px'
+          }}
+        >
+          {readyState === 'connected' ? 'Disconnect' : 
+           isConnecting ? 'Connecting...' : 'Start Voice Chat'}
+        </button>
+        
+        <button 
+          onClick={clearMessages}
+          style={{
+            padding: '12px 24px',
+            fontSize: '16px',
+            backgroundColor: '#6b7280',
+            color: 'white',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer'
+          }}
+        >
+          Clear Chat
+        </button>
+      </div>
+
+      {/* Turn Indicator */}
+      {readyState === 'connected' && (
+        <div style={{ 
+          display: 'flex', 
+          justifyContent: 'center', 
+          gap: '20px', 
+          marginBottom: '20px' 
+        }}>
+          <div style={{ 
+            padding: '8px 16px',
+            backgroundColor: isUserTurn ? '#3b82f6' : '#f3f4f6',
+            color: isUserTurn ? 'white' : '#6b7280',
+            borderRadius: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            {isRecording ? '🎤' : '👤'} Your Turn
+          </div>
+          
+          <div style={{ 
+            padding: '8px 16px',
+            backgroundColor: isAssistantTurn ? '#22c55e' : '#f3f4f6',
+            color: isAssistantTurn ? 'white' : '#6b7280',
+            borderRadius: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}>
+            {isTTSPlaying ? '🔊' : '🤖'} AI Turn
+          </div>
+        </div>
+      )}
+
+      {/* Error Display */}
+      {error && (
+        <div style={{ 
+          backgroundColor: '#fef2f2',
+          border: '1px solid #fca5a5',
+          color: '#dc2626',
+          padding: '12px',
+          borderRadius: '8px',
+          marginBottom: '20px'
+        }}>
+          <strong>Error:</strong> {error.message}
+        </div>
+      )}
+
+      {/* Messages */}
+      <div style={{ 
+        height: '400px', 
+        overflowY: 'auto',
+        border: '1px solid #e5e7eb',
+        borderRadius: '8px',
+        padding: '16px'
+      }}>
+        {messages.length === 0 ? (
+          <div style={{ 
+            textAlign: 'center', 
+            color: '#6b7280',
+            paddingTop: '50px'
+          }}>
+            {readyState === 'connected' 
+              ? 'Start speaking to begin your conversation...' 
+              : 'Connect to start chatting with NextEVI'}
+          </div>
+        ) : (
+          messages.map(message => (
+            <div key={message.id} style={{ 
+              marginBottom: '16px',
+              padding: '12px',
+              backgroundColor: message.type === 'user' ? '#eff6ff' : '#f0fdf4',
+              borderRadius: '8px',
+              borderLeft: `4px solid ${message.type === 'user' ? '#3b82f6' : '#22c55e'}`
+            }}>
+              <div style={{ 
+                fontWeight: 'bold', 
+                marginBottom: '4px',
+                color: message.type === 'user' ? '#1d4ed8' : '#166534'
+              }}>
+                {message.type === 'user' ? 'You' : 'AI Assistant'}
+              </div>
+              
+              <div style={{ marginBottom: '8px' }}>
+                {message.content}
+              </div>
+              
+              {/* Emotion Display */}
+              {message.metadata?.emotions && (
+                <div style={{ 
+                  fontSize: '12px', 
+                  color: '#6b7280',
+                  display: 'flex',
+                  gap: '12px',
+                  flexWrap: 'wrap'
+                }}>
+                  {Object.entries(message.metadata.emotions)
+                    .filter(([, score]) => score > 0.1)
+                    .sort(([, a], [, b]) => b - a)
+                    .slice(0, 3)
+                    .map(([emotion, score]) => (
+                      <span key={emotion}>
+                        {emotion}: {(score * 100).toFixed(0)}%
+                      </span>
+                    ))}
+                </div>
+              )}
+              
+              <div style={{ 
+                fontSize: '10px', 
+                color: '#9ca3af',
+                textAlign: 'right',
+                marginTop: '4px'
+              }}>
+                {message.timestamp.toLocaleTimeString()}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <VoiceProvider debug={true}>
+      <VoiceChatInterface />
+    </VoiceProvider>
+  );
+}
+
+export default App;
+```
+
+This comprehensive React SDK guide provides everything developers need to integrate NextEVI's voice AI into their React applications, from basic setup to advanced features like emotion recognition and turn detection.
