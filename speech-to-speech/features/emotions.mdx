@@ -87,8 +87,8 @@ function EmotionAwareChat() {
     await connect({
       auth: {
         apiKey: "oak_your_api_key",
-        projectId: "your-project-id",
-        configId: "your-config-id"
+        projectId: "your_project_id",
+        configId: "your_config_id"
       },
       // Enable emotion detection
       sessionSettings: {
@@ -164,7 +164,7 @@ function EmotionDisplay({ emotions }) {
 Listen for emotion update events:
 
 ```javascript
-const ws = new WebSocket('wss://api.nextevi.com/voice/websocket/conn-123');
+const ws = new WebSocket('wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id');
 
 ws.onmessage = (event) => {
   const message = JSON.parse(event.data);

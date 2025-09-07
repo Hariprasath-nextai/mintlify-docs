@@ -12,7 +12,7 @@ NextEVI uses WebSocket for real-time bidirectional voice communication. The prot
 ### WebSocket URL
 
 ```
-wss://api.nextevi.com/voice/websocket/{connection_id}
+wss://api.nextevi.com/ws/voice/{connection_id}
 ```
 
 ### Authentication
@@ -22,13 +22,13 @@ wss://api.nextevi.com/voice/websocket/{connection_id}
     Pass credentials as query parameters:
 
 ```
-wss://api.nextevi.com/voice/websocket/{connection_id}?api_key=oak_your_api_key&config_id=your_config_id&project_id=your_project_id
+wss://api.nextevi.com/ws/voice/{connection_id}?api_key=oak_your_api_key&config_id=your_config_id
 ```
 
 **Parameters:**
 - `api_key` - Organization API key (starts with `oak_`)
 - `config_id` - Voice configuration identifier
-- `project_id` - Project identifier (optional, auto-detected if not provided)
+- `project_id` - Project identifier (optional, auto-detected from config if not provided)
   </Tab>
 
   <Tab title="JWT Authentication">
@@ -41,7 +41,7 @@ Authorization: Bearer your_jwt_token
 
 **Query Parameter:**
 ```
-wss://api.nextevi.com/voice/websocket/{connection_id}?authorization=Bearer%20your_jwt_token&config_id=your_config_id
+wss://api.nextevi.com/ws/voice/{connection_id}?authorization=Bearer%20your_jwt_token&config_id=your_config_id
 ```
   </Tab>
 </Tabs>
@@ -511,18 +511,18 @@ Recommended WebSocket libraries for different platforms:
   <Tab title="JavaScript/Browser">
     ```javascript
     // Native WebSocket API
-    const ws = new WebSocket('wss://api.nextevi.com/voice/websocket/conn-123');
+    const ws = new WebSocket('wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id');
     
     // With reconnection library
     import ReconnectingWebSocket from 'reconnecting-websocket';
-    const ws = new ReconnectingWebSocket('wss://api.nextevi.com/voice/websocket/conn-123');
+    const ws = new ReconnectingWebSocket('wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id');
     ```
   </Tab>
   
   <Tab title="Node.js">
     ```javascript
     const WebSocket = require('ws');
-    const ws = new WebSocket('wss://api.nextevi.com/voice/websocket/conn-123');
+    const ws = new WebSocket('wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id');
     ```
   </Tab>
   
@@ -532,7 +532,7 @@ Recommended WebSocket libraries for different platforms:
     import websockets
     
     async def connect():
-        uri = "wss://api.nextevi.com/voice/websocket/conn-123"
+        uri = "wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id"
         async with websockets.connect(uri) as websocket:
             # Handle messages
             pass
@@ -542,11 +542,11 @@ Recommended WebSocket libraries for different platforms:
   <Tab title="React Native">
     ```javascript
     // Native WebSocket support
-    const ws = new WebSocket('wss://api.nextevi.com/voice/websocket/conn-123');
+    const ws = new WebSocket('wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id');
     
     // Or with enhanced library
     import { w3cwebsocket as WebSocket } from "websocket";
-    const ws = new WebSocket('wss://api.nextevi.com/voice/websocket/conn-123');
+    const ws = new WebSocket('wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id');
     ```
   </Tab>
 </Tabs>

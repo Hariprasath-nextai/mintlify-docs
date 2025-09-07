@@ -1,0 +1,746 @@
+---
+title: "WebSocket API Reference"
+description: "Complete API reference for NextEVI WebSocket voice communication"
+---
+
+# WebSocket API Reference
+
+Complete reference documentation for NextEVI's real-time WebSocket API for Speech-to-Speech voice communication.
+
+## Base URL
+
+```
+wss://api.nextevi.com/ws/voice/{connection_id}
+```
+
+## Connection
+
+### Endpoint
+
+```
+wss://api.nextevi.com/ws/voice/{connection_id}
+```
+
+<ParamField path="connection_id" type="string" required>
+  Unique connection identifier. Generate a UUID v4 for each new connection.
+</ParamField>
+
+### Authentication
+
+<Tabs>
+  <Tab title="API Key (Query Parameter)">
+    Pass your organization API key as a query parameter:
+    
+    ```
+    wss://api.nextevi.com/ws/voice/{connection_id}?api_key=oak_your_api_key&config_id=your_config_id
+    ```
+  </Tab>
+  
+  <Tab title="JWT Token (Header)">
+    Pass JWT token via Authorization header (recommended for client applications):
+    
+    ```http
+    Authorization: Bearer your_jwt_token
+    ```
+    
+    ```
+    wss://api.nextevi.com/ws/voice/{connection_id}?config_id=your_config_id
+    ```
+  </Tab>
+  
+  <Tab title="JWT Token (Query Parameter)">
+    Pass JWT token as query parameter (browser-compatible):
+    
+    ```
+    wss://api.nextevi.com/ws/voice/{connection_id}?authorization=Bearer%20your_jwt_token&config_id=your_config_id
+    ```
+  </Tab>
+</Tabs>
+
+### Query Parameters
+
+<ParamField query="api_key" type="string">
+  Organization API key (starts with `oak_`). Required if not using JWT authentication.
+</ParamField>
+
+<ParamField query="config_id" type="string" required>
+  Voice configuration identifier from your NextEVI dashboard.
+</ParamField>
+
+<ParamField query="project_id" type="string">
+  Project identifier (optional, auto-detected from config if not provided)
+</ParamField>
+
+<ParamField query="authorization" type="string">
+  JWT token as 'Bearer token' - alternative to Authorization header
+</ParamField>
+
+### Response
+
+Connection establishment follows standard WebSocket handshake. Upon successful connection, server sends:
+
+1. **Connection Metadata** - Connection details and configuration
+2. **Ready for Messages** - Client can now send session settings and audio
+
+### Connection Flow
+
+1. **WebSocket Handshake**: Client initiates WebSocket connection
+2. **Authentication**: Server validates API key or JWT token  
+3. **Connection Metadata**: Server sends connection details
+4. **Session Settings**: Client configures audio and feature settings
+5. **Ready**: Connection ready for voice communication
+
+---
+
+## Message Format
+
+All WebSocket messages use consistent JSON structure:
+
+```json
+{
+  "type": "message_type",
+  "timestamp": 1645123456.789,
+  "message_id": "uuid-string",
+  "data": {
+    // Message-specific payload
+  }
+}
+```
+
+<ParamField body="type" type="string" required>
+  Message type identifier (see message types below)
+</ParamField>
+
+<ParamField body="timestamp" type="number" required>
+  Unix timestamp in seconds with millisecond precision
+</ParamField>
+
+<ParamField body="message_id" type="string" required>
+  Unique identifier for this message (UUID recommended)
+</ParamField>
+
+<ParamField body="data" type="object">
+  Message-specific data payload (varies by message type)
+</ParamField>
+
+---
+
+## Client Messages
+
+Messages sent from client to server.
+
+### Session Settings
+
+Configure audio settings and enable features for the connection.
+
+```json
+{
+  "type": "session_settings",
+  "timestamp": 1645123456.789,
+  "message_id": "settings-1",
+  "data": {
+    "emotion_detection": { "enabled": true },
+    "turn_detection": { "enabled": true, "silence_threshold": 0.5 },
+    "audio": { 
+      "sample_rate": 24000, 
+      "channels": 1, 
+      "encoding": "linear16" 
+    }
+  }
+}
+```
+
+<ParamField body="data.emotion_detection" type="object">
+  - `enabled` (boolean): Enable real-time emotion detection
+</ParamField>
+
+<ParamField body="data.turn_detection" type="object">
+  - `enabled` (boolean): Enable intelligent turn detection
+  - `silence_threshold` (number): Silence duration to detect turn end (seconds)
+</ParamField>
+
+<ParamField body="data.audio" type="object" required>
+  - `sample_rate` (number): Audio sample rate (24000 recommended)
+  - `channels` (number): Audio channels (1 for mono)  
+  - `encoding` (string): Audio encoding format ("linear16")
+</ParamField>
+
+### Audio Input
+
+Send audio data for speech processing.
+
+```json
+{
+  "type": "audio_input", 
+  "timestamp": 1645123456.789,
+  "message_id": "audio-1",
+  "data": {
+    "audio": "base64-encoded-audio-data",
+    "chunk_id": "chunk-001"
+  }
+}
+```
+
+<ParamField body="data.audio" type="string" required>
+  Base64-encoded PCM audio data (16-bit, mono, 24kHz)
+</ParamField>
+
+<ParamField body="data.chunk_id" type="string">
+  Optional identifier for audio chunk ordering
+</ParamField>
+
+**Alternative: Binary Audio**
+
+For efficiency, send raw PCM audio data (16-bit, mono, 24kHz) as binary WebSocket frames:
+
+```javascript
+const audioBuffer = new Int16Array(audioSamples);
+websocket.send(audioBuffer.buffer);
+```
+
+### Keep Alive
+
+Maintain connection during idle periods.
+
+```json
+{
+  "type": "keep_alive",
+  "timestamp": 1645123456.789, 
+  "message_id": "ping-1"
+}
+```
+
+---
+
+## Server Messages
+
+Messages sent from server to client.
+
+### Connection Metadata
+
+Sent immediately after successful connection establishment.
+
+```json
+{
+  "type": "connection_metadata",
+  "timestamp": 1645123456.789,
+  "message_id": "meta-1", 
+  "data": {
+    "connection_id": "conn-xyz789",
+    "status": "connected",
+    "config": {
+      "audio_format": "pcm_24khz_16bit_mono",
+      "encoding": "linear16", 
+      "sample_rate": 24000,
+      "channels": 1
+    },
+    "project_id": "project-123",
+    "config_id": "config-abc"
+  }
+}
+```
+
+<ParamField body="data.connection_id" type="string">
+  Confirmed connection identifier
+</ParamField>
+
+<ParamField body="data.status" type="string">
+  Connection status ("connected")
+</ParamField>
+
+<ParamField body="data.config" type="object">
+  Audio configuration details
+</ParamField>
+
+<ParamField body="data.project_id" type="string">
+  Associated project identifier
+</ParamField>
+
+<ParamField body="data.config_id" type="string">
+  Voice configuration identifier
+</ParamField>
+
+### Transcription
+
+Real-time speech-to-text results from user audio input.
+
+```json
+{
+  "type": "transcription",
+  "timestamp": 1645123456.789,
+  "message_id": "transcript-1",
+  "data": {
+    "transcript": "Hello, how can I help you today?",
+    "confidence": 0.95,
+    "is_final": true,
+    "is_speech_final": true,
+    "session_id": "conn-xyz789",
+    "words": [
+      {
+        "word": "Hello",
+        "start": 1.2,
+        "end": 1.6, 
+        "confidence": 0.98
+      }
+    ],
+    "accumulated_transcript": "Hello, how can I help you today?",
+    "is_turn_incomplete": false,
+    "original_fragment": "Hello, how can I help you today?"
+  }
+}
+```
+
+<ParamField body="data.transcript" type="string">
+  Transcribed text from speech input
+</ParamField>
+
+<ParamField body="data.confidence" type="number">
+  Transcription confidence score (0-1)
+</ParamField>
+
+<ParamField body="data.is_final" type="boolean">
+  Whether this transcription is final (true) or partial (false)
+</ParamField>
+
+<ParamField body="data.is_speech_final" type="boolean">
+  Whether the user has finished speaking this utterance
+</ParamField>
+
+<ParamField body="data.session_id" type="string">
+  Session identifier for this connection
+</ParamField>
+
+<ParamField body="data.words" type="array">
+  Word-level timing and confidence information
+  - `word` (string): The word
+  - `start` (number): Start time in seconds
+  - `end` (number): End time in seconds  
+  - `confidence` (number): Word confidence score (0-1)
+</ParamField>
+
+<ParamField body="data.accumulated_transcript" type="string">
+  Complete accumulated text for this conversation turn
+</ParamField>
+
+<ParamField body="data.is_turn_incomplete" type="boolean">
+  Whether the user's conversation turn is still continuing
+</ParamField>
+
+<ParamField body="data.original_fragment" type="string">
+  Original transcript fragment before accumulation
+</ParamField>
+
+### LLM Response Chunk
+
+Streaming text responses from the language model.
+
+```json
+{
+  "type": "llm_response_chunk",
+  "timestamp": 1645123456.789,
+  "message_id": "llm-chunk-1",
+  "data": {
+    "content": "I'd be happy to help you with",
+    "is_final": false,
+    "generation_id": "gen-abc123", 
+    "chunk_index": 1
+  }
+}
+```
+
+<ParamField body="data.content" type="string">
+  Text content chunk from language model
+</ParamField>
+
+<ParamField body="data.is_final" type="boolean">
+  Whether this is the final chunk in the response
+</ParamField>
+
+<ParamField body="data.generation_id" type="string">
+  Unique identifier for this response generation
+</ParamField>
+
+<ParamField body="data.chunk_index" type="number">
+  Sequential index of this chunk in the response
+</ParamField>
+
+### TTS Audio Chunk
+
+Audio response chunks for playback to user.
+
+```json
+{
+  "type": "tts_chunk",
+  "timestamp": 1645123456.789,
+  "message_id": "tts-1", 
+  "content": "base64-encoded-audio-data"
+}
+```
+
+<ParamField body="content" type="string">
+  Base64-encoded audio data (WAV format) for playback
+</ParamField>
+
+### Emotion Update
+
+Real-time emotion detection results from user speech.
+
+```json
+{
+  "type": "emotion_update",
+  "timestamp": 1645123456.789,
+  "message_id": "emotion-1",
+  "data": {
+    "top_emotions": [
+      { "name": "Joy", "score": 0.85 },
+      { "name": "Excitement", "score": 0.72 }
+    ],
+    "all_emotions": {
+      "Joy": 0.85,
+      "Sadness": 0.12,
+      "Anger": 0.03,
+      "Fear": 0.05, 
+      "Surprise": 0.15,
+      "Disgust": 0.02,
+      "Contempt": 0.01,
+      "Excitement": 0.72,
+      "Calmness": 0.45
+    },
+    "processing_time": 0.045,
+    "utterance_duration": 2.3,
+    "connection_id": "conn-xyz789",
+    "session_id": "conn-xyz789"
+  }
+}
+```
+
+<ParamField body="data.top_emotions" type="array">
+  Top detected emotions with confidence scores
+  - `name` (string): Emotion name
+  - `score` (number): Confidence score (0-1)
+</ParamField>
+
+<ParamField body="data.all_emotions" type="object">
+  Complete emotion analysis results with scores for all emotions
+</ParamField>
+
+<ParamField body="data.processing_time" type="number">
+  Time taken to process emotion detection (seconds)
+</ParamField>
+
+<ParamField body="data.utterance_duration" type="number">
+  Duration of analyzed speech segment (seconds)
+</ParamField>
+
+<ParamField body="data.connection_id" type="string">
+  Connection identifier
+</ParamField>
+
+<ParamField body="data.session_id" type="string">
+  Session identifier
+</ParamField>
+
+### Turn Detection Events
+
+Conversation turn management events.
+
+**Turn Start**
+```json
+{
+  "type": "turn_start", 
+  "timestamp": 1645123456.789,
+  "message_id": "turn-1",
+  "data": {
+    "turn_id": "turn-abc123"
+  }
+}
+```
+
+**Turn End**
+```json
+{
+  "type": "turn_end",
+  "timestamp": 1645123456.789,
+  "message_id": "turn-2", 
+  "data": {
+    "turn_id": "turn-abc123",
+    "duration": 3.2,
+    "is_complete": true
+  }
+}
+```
+
+<ParamField body="data.turn_id" type="string">
+  Unique identifier for this conversation turn
+</ParamField>
+
+<ParamField body="data.duration" type="number">
+  Duration of the turn in seconds (turn_end only)
+</ParamField>
+
+<ParamField body="data.is_complete" type="boolean">
+  Whether the turn was completed naturally (turn_end only)
+</ParamField>
+
+### TTS Interruption
+
+Indicates AI speech was interrupted by user.
+
+```json
+{
+  "type": "tts_interruption",
+  "timestamp": 1645123456.789,
+  "message_id": "interrupt-1",
+  "content": ""
+}
+```
+
+### Status Messages
+
+System status updates and confirmations.
+
+```json
+{
+  "type": "status",
+  "timestamp": 1645123456.789,
+  "message_id": "status-1",
+  "data": {
+    "status": "ready", 
+    "details": {
+      "session_settings": {
+        "sample_rate": 24000,
+        "channels": 1,
+        "encoding": "linear16"
+      }
+    }
+  }
+}
+```
+
+<ParamField body="data.status" type="string">
+  Current system status
+  - `ready`: System ready for voice communication
+  - `processing`: Processing audio or generating response
+  - `error`: Error state
+</ParamField>
+
+<ParamField body="data.details" type="object">
+  Additional status details and configuration
+</ParamField>
+
+### Error Messages
+
+Error notifications and debugging information.
+
+```json
+{
+  "type": "error",
+  "timestamp": 1645123456.789, 
+  "message_id": "error-1",
+  "data": {
+    "error_code": "AUDIO_PROCESSING_FAILED",
+    "error_message": "Failed to process audio chunk",
+    "details": {
+      "chunk_id": "chunk-001"
+    }
+  }
+}
+```
+
+<ParamField body="data.error_code" type="string">
+  Standardized error code (see [Error Reference](/api-reference/errors))
+</ParamField>
+
+<ParamField body="data.error_message" type="string">  
+  Human-readable error message
+</ParamField>
+
+<ParamField body="data.details" type="object">
+  Additional error context and debugging information
+</ParamField>
+
+---
+
+## Response Codes
+
+WebSocket connections use standard HTTP status codes during handshake, then WebSocket close codes:
+
+### HTTP Status Codes (Handshake)
+
+| Code | Description |
+|------|-------------|
+| `101` | Switching Protocols - Connection successful |
+| `400` | Bad Request - Invalid connection parameters |
+| `401` | Unauthorized - Authentication failed |
+| `403` | Forbidden - Access denied |
+| `404` | Not Found - Invalid endpoint |
+| `429` | Too Many Requests - Rate limited |
+| `500` | Internal Server Error - Server error |
+
+### WebSocket Close Codes
+
+| Code | Description | Retry |
+|------|-------------|-------|
+| `1000` | Normal Closure - Clean disconnect | No |
+| `1001` | Going Away - Server restart | Yes |
+| `1002` | Protocol Error - Invalid message format | No | 
+| `1003` | Unsupported Data - Invalid data type | No |
+| `1006` | Abnormal Closure - Network error | Yes |
+| `1011` | Internal Error - Server error | Yes |
+| `4001` | Unauthorized - Authentication failed | No |
+| `4002` | Invalid Config - Config not found | No |
+| `4003` | Access Denied - Insufficient permissions | No |
+| `4004` | Rate Limited - Too many connections | Yes |
+
+---
+
+## Rate Limits
+
+### Connection Limits
+
+| Limit Type | Limit | Window |
+|------------|-------|--------|
+| Connections per API Key | 100 | 1 minute |
+| Connections per IP | 50 | 1 minute | 
+| Audio Messages | 1000 | 1 minute |
+| Text Messages | 100 | 1 minute |
+
+### Audio Limits
+
+| Metric | Limit |
+|--------|-------|
+| Max Audio Chunk Size | 1 MB |
+| Max Message Rate | 100/second |
+| Max Session Duration | 60 minutes |
+| Max Concurrent Sessions | 10 per API key |
+
+Rate limits are enforced per API key and IP address. Exceeded limits result in HTTP 429 or WebSocket close code 4004.
+
+---
+
+## Best Practices
+
+### Connection Management
+- Generate unique connection IDs (UUID v4 recommended)
+- Implement exponential backoff for reconnections
+- Handle connection lifecycle properly (open/message/error/close)
+- Use keep-alive messages for long idle periods
+
+### Audio Streaming
+- Send audio in 100-200ms chunks for optimal latency  
+- Use 24kHz, 16-bit, mono PCM format
+- Implement audio buffering on client side
+- Use binary WebSocket frames for audio when possible
+
+### Error Handling
+- Always handle WebSocket error and close events
+- Implement retry logic with backoff for network errors
+- Don't retry authentication failures (4xxx codes)
+- Log errors with sufficient context for debugging
+
+### Performance
+- Minimize message payloads where possible
+- Use efficient audio encoding (binary vs base64)
+- Implement client-side audio processing (noise reduction)
+- Monitor connection health and latency
+
+### Security
+- Use secure WebSocket connections (wss://) only
+- Validate all message payloads
+- Implement proper authentication token refresh
+- Don't log sensitive data in error messages
+
+---
+
+## Code Examples
+
+### JavaScript Connection
+
+```javascript
+const ws = new WebSocket(
+  'wss://api.nextevi.com/ws/voice/conn-123?' + 
+  new URLSearchParams({
+    api_key: 'oak_your_api_key',
+    config_id: 'your_config_id'
+  })
+);
+
+ws.onopen = () => {
+  // Send session settings
+  ws.send(JSON.stringify({
+    type: 'session_settings',
+    timestamp: Date.now() / 1000,
+    message_id: 'settings-1',
+    data: {
+      emotion_detection: { enabled: true },
+      audio: { sample_rate: 24000, channels: 1, encoding: 'linear16' }
+    }
+  }));
+};
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  console.log('Received:', message);
+};
+```
+
+### Python Connection
+
+```python
+import asyncio
+import websockets
+import json
+
+async def connect():
+    uri = "wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id"
+    
+    async with websockets.connect(uri) as websocket:
+        # Send session settings
+        await websocket.send(json.dumps({
+            "type": "session_settings",
+            "timestamp": time.time(),
+            "message_id": "settings-1", 
+            "data": {
+                "emotion_detection": {"enabled": True},
+                "audio": {"sample_rate": 24000, "channels": 1, "encoding": "linear16"}
+            }
+        }))
+        
+        # Listen for messages
+        async for message in websocket:
+            data = json.loads(message)
+            print("Received:", data)
+
+asyncio.run(connect())
+```
+
+### cURL Connection Test
+
+```bash
+# Test WebSocket connection with cURL
+curl -i -N -H "Connection: Upgrade" \
+     -H "Upgrade: websocket" \
+     -H "Sec-WebSocket-Version: 13" \
+     -H "Sec-WebSocket-Key: $(echo -n 'test' | base64)" \
+     -H "Authorization: Bearer your_jwt_token" \
+     "wss://api.nextevi.com/ws/voice/conn-123?config_id=your_config_id"
+```
+
+---
+
+## Related Documentation
+
+<CardGroup cols={2}>
+  <Card title="WebSocket Connection Guide" icon="plug" href="/speech-to-speech/websocket-api/connection">
+    Learn how to establish connections
+  </Card>
+  <Card title="Message Protocol" icon="comments" href="/speech-to-speech/websocket-api/protocol">  
+    Detailed message format guide
+  </Card>
+  <Card title="Authentication" icon="key" href="/speech-to-speech/authentication">
+    Authentication methods and security
+  </Card>
+  <Card title="Error Reference" icon="exclamation-triangle" href="/api-reference/errors">
+    Complete error codes and solutions
+  </Card>
+</CardGroup>

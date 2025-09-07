@@ -1,0 +1,711 @@
+---
+title: "Error Reference"
+description: "Complete reference for NextEVI API error codes, causes, and solutions"
+---
+
+# Error Reference
+
+Complete guide to NextEVI API errors, including error codes, common causes, and troubleshooting solutions.
+
+## Error Format
+
+All API errors follow a consistent format:
+
+### WebSocket Errors
+
+```json
+{
+  "type": "error",
+  "timestamp": 1645123456.789,
+  "message_id": "error-1",
+  "data": {
+    "error_code": "AUDIO_PROCESSING_FAILED",
+    "error_message": "Failed to process audio chunk",
+    "details": {
+      "chunk_id": "chunk-001",
+      "reason": "Invalid audio format"
+    }
+  }
+}
+```
+
+### Connection Errors
+
+Connection failures use WebSocket close codes with reason phrases:
+
+```javascript
+ws.onclose = (event) => {
+  console.log(`Connection closed: ${event.code} - ${event.reason}`);
+};
+```
+
+---
+
+## Authentication Errors
+
+### AUTH_REQUIRED (4001)
+
+**HTTP Status**: 401 Unauthorized  
+**WebSocket Close Code**: 4001
+
+**Cause**: No authentication credentials provided in the connection request.
+
+**Solutions**:
+- Include `api_key` query parameter with valid API key
+- Include `Authorization` header with valid JWT token
+- Include `authorization` query parameter with JWT token
+
+<CodeGroup>
+```javascript Fixed - API Key
+const ws = new WebSocket(
+  `wss://api.nextevi.com/ws/voice/${connectionId}?api_key=oak_your_api_key&config_id=your_config_id`
+);
+```
+
+```javascript Fixed - JWT Header
+const ws = new WebSocket(
+  `wss://api.nextevi.com/ws/voice/${connectionId}?config_id=your_config_id`,
+  { headers: { 'Authorization': `Bearer ${jwtToken}` } }
+);
+```
+</CodeGroup>
+
+### AUTH_FAILED (4001)
+
+**HTTP Status**: 401 Unauthorized  
+**WebSocket Close Code**: 4001
+
+**Cause**: Authentication credentials are invalid, expired, or malformed.
+
+**Common Issues**:
+- API key format incorrect (must start with `oak_`)
+- API key revoked or expired
+- JWT token expired or invalid signature
+- JWT token missing required claims
+
+**Solutions**:
+
+<Tabs>
+  <Tab title="API Key Issues">
+    ```javascript
+    // Check API key format
+    const apiKey = 'oak_your_api_key';
+    if (!apiKey.startsWith('oak_')) {
+      throw new Error('API key must start with oak_');
+    }
+    
+    // Verify API key is active in dashboard
+    // Regenerate if necessary
+    ```
+  </Tab>
+  
+  <Tab title="JWT Token Issues">
+    ```javascript
+    // Check JWT expiration
+    function isJWTExpired(token) {
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        return payload.exp < Date.now() / 1000;
+      } catch (e) {
+        return true; // Invalid token format
+      }
+    }
+    
+    if (isJWTExpired(jwtToken)) {
+      // Refresh token before connecting
+      jwtToken = await refreshJWTToken();
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### ACCESS_DENIED (4003)
+
+**HTTP Status**: 403 Forbidden  
+**WebSocket Close Code**: 4003
+
+**Cause**: Valid authentication but insufficient permissions for the requested resource.
+
+**Common Issues**:
+- API key doesn't have access to specified project
+- JWT token missing required permissions
+- Account suspended or billing issues
+
+**Solutions**:
+- Verify project permissions in NextEVI dashboard
+- Check account status and billing
+- Ensure JWT token includes required scopes
+- Contact support if permissions appear correct
+
+---
+
+## Configuration Errors
+
+### CONFIG_NOT_FOUND (4004)
+
+**HTTP Status**: 404 Not Found  
+**WebSocket Close Code**: 4004
+
+**Cause**: The specified `config_id` does not exist or is not accessible.
+
+**Solutions**:
+- Verify config_id exists in your NextEVI dashboard
+- Check config_id spelling and format
+- Ensure config belongs to the correct project
+- Create a new config if necessary
+
+```javascript
+// Validate config before connecting
+const validConfigs = ['config-abc123', 'config-xyz789'];
+if (!validConfigs.includes(configId)) {
+  throw new Error(`Invalid config_id: ${configId}`);
+}
+```
+
+### INVALID_PROJECT (4004)
+
+**HTTP Status**: 404 Not Found  
+**WebSocket Close Code**: 4004
+
+**Cause**: The specified `project_id` is invalid or not accessible.
+
+**Solutions**:
+- Verify project_id in NextEVI dashboard
+- Remove project_id parameter to use auto-detection
+- Check project ownership and permissions
+
+---
+
+## Connection Errors
+
+### CONNECTION_FAILED (4002)
+
+**WebSocket Close Code**: 4002
+
+**Cause**: Failed to establish or register the WebSocket connection.
+
+**Common Issues**:
+- Server overloaded or unavailable
+- Network connectivity problems
+- Invalid connection parameters
+
+**Solutions**:
+- Retry connection with exponential backoff
+- Check network connectivity
+- Verify all required parameters are provided
+- Try connecting to a different region if available
+
+```javascript
+class ConnectionManager {
+  async connectWithRetry(maxRetries = 5) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        const ws = new WebSocket(this.buildUrl());
+        await this.waitForConnection(ws);
+        return ws;
+      } catch (error) {
+        if (attempt === maxRetries) throw error;
+        
+        const delay = Math.min(1000 * Math.pow(2, attempt - 1), 30000);
+        console.log(`Connection attempt ${attempt} failed, retrying in ${delay}ms`);
+        await this.sleep(delay);
+      }
+    }
+  }
+}
+```
+
+### CONNECTION_TIMEOUT (1001)
+
+**WebSocket Close Code**: 1001
+
+**Cause**: Connection timed out due to inactivity or network issues.
+
+**Solutions**:
+- Implement keep-alive messages
+- Check network stability
+- Reduce idle timeout if configurable
+- Implement automatic reconnection
+
+```javascript
+// Keep-alive implementation
+setInterval(() => {
+  if (ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({
+      type: 'keep_alive',
+      timestamp: Date.now() / 1000,
+      message_id: `ping-${Date.now()}`
+    }));
+  }
+}, 30000); // Send every 30 seconds
+```
+
+---
+
+## Audio Processing Errors
+
+### AUDIO_PROCESSING_FAILED (5001)
+
+**Cause**: Failed to process audio input data.
+
+**Common Issues**:
+- Invalid audio format or encoding
+- Corrupted audio data
+- Audio chunk too large
+- Unsupported sample rate
+
+**Solutions**:
+
+<Tabs>
+  <Tab title="Audio Format">
+    ```javascript
+    // Ensure correct audio format
+    const audioConfig = {
+      sampleRate: 24000,    // Must be 24kHz
+      channels: 1,          // Must be mono
+      sampleSize: 16,       // Must be 16-bit
+      encoding: 'linear16'  // PCM encoding
+    };
+    
+    // Convert audio to correct format before sending
+    function convertAudioFormat(audioBuffer) {
+      // Convert to 16-bit PCM, mono, 24kHz
+      // Implementation depends on your audio source
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Data Validation">
+    ```javascript
+    // Validate audio data before sending
+    function validateAudioChunk(audioData) {
+      if (!audioData || audioData.length === 0) {
+        throw new Error('Empty audio data');
+      }
+      
+      if (audioData.length > 1024 * 1024) { // 1MB limit
+        throw new Error('Audio chunk too large');
+      }
+      
+      // Additional validation...
+    }
+    
+    // Send audio with error handling
+    try {
+      validateAudioChunk(audioData);
+      const message = {
+        type: 'audio_input',
+        timestamp: Date.now() / 1000,
+        message_id: `audio-${Date.now()}`,
+        data: {
+          audio: base64Audio,
+          chunk_id: `chunk-${chunkIndex}`
+        }
+      };
+      ws.send(JSON.stringify(message));
+    } catch (error) {
+      console.error('Audio validation failed:', error);
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### AUDIO_FORMAT_UNSUPPORTED (5002)
+
+**Cause**: Audio format not supported by the processing pipeline.
+
+**Supported Formats**:
+- **Encoding**: linear16 (16-bit PCM)
+- **Sample Rate**: 24000 Hz
+- **Channels**: 1 (mono)
+- **Bit Depth**: 16 bits
+
+**Solutions**:
+```javascript
+// Configure MediaRecorder for correct format
+const stream = await navigator.mediaDevices.getUserMedia({
+  audio: {
+    sampleRate: 24000,
+    channelCount: 1,
+    sampleSize: 16,
+    echoCancellation: true,
+    noiseSuppression: true,
+    autoGainControl: true
+  }
+});
+```
+
+### AUDIO_CHUNK_TOO_LARGE (5003)
+
+**Cause**: Audio chunk exceeds maximum allowed size.
+
+**Limits**:
+- Maximum chunk size: 1 MB
+- Recommended chunk size: 100-200 KB (100-200ms of audio)
+
+**Solutions**:
+```javascript
+const MAX_CHUNK_SIZE = 1024 * 200; // 200KB
+
+function splitAudioChunk(audioData) {
+  const chunks = [];
+  for (let i = 0; i < audioData.length; i += MAX_CHUNK_SIZE) {
+    chunks.push(audioData.slice(i, i + MAX_CHUNK_SIZE));
+  }
+  return chunks;
+}
+```
+
+---
+
+## Rate Limiting Errors
+
+### RATE_LIMITED (4004)
+
+**HTTP Status**: 429 Too Many Requests  
+**WebSocket Close Code**: 4004
+
+**Cause**: Exceeded rate limits for connections or messages.
+
+**Rate Limits**:
+- Connections: 100 per minute per API key
+- Messages: 1000 per minute per connection
+- Audio chunks: 100 per second per connection
+
+**Solutions**:
+
+<Tabs>
+  <Tab title="Connection Pooling">
+    ```javascript
+    class ConnectionPool {
+      constructor(maxConnections = 5) {
+        this.connections = [];
+        this.maxConnections = maxConnections;
+        this.currentIndex = 0;
+      }
+      
+      async getConnection() {
+        if (this.connections.length < this.maxConnections) {
+          const connection = await this.createConnection();
+          this.connections.push(connection);
+          return connection;
+        }
+        
+        // Round-robin existing connections
+        const connection = this.connections[this.currentIndex];
+        this.currentIndex = (this.currentIndex + 1) % this.connections.length;
+        return connection;
+      }
+    }
+    ```
+  </Tab>
+  
+  <Tab title="Message Throttling">
+    ```javascript
+    class MessageThrottler {
+      constructor(maxPerSecond = 50) {
+        this.maxPerSecond = maxPerSecond;
+        this.queue = [];
+        this.lastSent = 0;
+      }
+      
+      async sendMessage(ws, message) {
+        return new Promise((resolve) => {
+          this.queue.push({ ws, message, resolve });
+          this.processQueue();
+        });
+      }
+      
+      processQueue() {
+        if (this.queue.length === 0) return;
+        
+        const now = Date.now();
+        const timeSinceLastSent = now - this.lastSent;
+        const minInterval = 1000 / this.maxPerSecond;
+        
+        if (timeSinceLastSent >= minInterval) {
+          const { ws, message, resolve } = this.queue.shift();
+          ws.send(JSON.stringify(message));
+          this.lastSent = now;
+          resolve();
+          
+          if (this.queue.length > 0) {
+            setTimeout(() => this.processQueue(), minInterval);
+          }
+        } else {
+          setTimeout(() => this.processQueue(), minInterval - timeSinceLastSent);
+        }
+      }
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Session Errors
+
+### SESSION_EXPIRED (5004)
+
+**Cause**: Session has expired or been terminated.
+
+**Common Causes**:
+- Session exceeded maximum duration (60 minutes)
+- Inactivity timeout reached
+- Server restart or maintenance
+
+**Solutions**:
+- Implement session refresh logic
+- Reconnect with new session
+- Handle graceful session termination
+
+```javascript
+ws.onclose = (event) => {
+  if (event.code === 5004) {
+    console.log('Session expired, reconnecting...');
+    // Start new session
+    setTimeout(() => {
+      connectToNextEVI();
+    }, 1000);
+  }
+};
+```
+
+### SESSION_LIMIT_EXCEEDED (5005)
+
+**Cause**: Maximum number of concurrent sessions exceeded.
+
+**Limits**:
+- Free tier: 1 concurrent session
+- Pro tier: 10 concurrent sessions
+- Enterprise: Custom limits
+
+**Solutions**:
+- Implement session management
+- Queue connections when at limit
+- Upgrade plan for higher limits
+
+```javascript
+class SessionManager {
+  constructor(maxSessions) {
+    this.activeSessions = new Map();
+    this.maxSessions = maxSessions;
+  }
+  
+  async createSession(userId) {
+    if (this.activeSessions.size >= this.maxSessions) {
+      throw new Error('Maximum sessions exceeded');
+    }
+    
+    const session = await this.connectToNextEVI();
+    this.activeSessions.set(userId, session);
+    
+    session.onclose = () => {
+      this.activeSessions.delete(userId);
+    };
+    
+    return session;
+  }
+}
+```
+
+---
+
+## Server Errors
+
+### INTERNAL_ERROR (5000)
+
+**WebSocket Close Code**: 1011
+
+**Cause**: Internal server error occurred.
+
+**Solutions**:
+- Retry connection after delay
+- Check NextEVI status page
+- Contact support if error persists
+
+```javascript
+ws.onclose = (event) => {
+  if (event.code === 1011 || event.code === 5000) {
+    console.log('Server error, retrying in 5 seconds...');
+    setTimeout(() => {
+      connectWithRetry();
+    }, 5000);
+  }
+};
+```
+
+### SERVICE_UNAVAILABLE (5503)
+
+**HTTP Status**: 503 Service Unavailable
+
+**Cause**: NextEVI service is temporarily unavailable.
+
+**Solutions**:
+- Implement exponential backoff retry
+- Check service status
+- Use fallback if available
+
+---
+
+## Message Format Errors
+
+### INVALID_MESSAGE_FORMAT (4000)
+
+**Cause**: Message does not conform to expected JSON schema.
+
+**Common Issues**:
+- Invalid JSON syntax
+- Missing required fields
+- Incorrect data types
+
+**Solutions**:
+```javascript
+// Validate message before sending
+function validateMessage(message) {
+  const required = ['type', 'timestamp', 'message_id'];
+  
+  for (const field of required) {
+    if (!(field in message)) {
+      throw new Error(`Missing required field: ${field}`);
+    }
+  }
+  
+  if (typeof message.timestamp !== 'number') {
+    throw new Error('timestamp must be a number');
+  }
+  
+  // Additional validation...
+}
+
+// Send message with validation
+try {
+  validateMessage(message);
+  ws.send(JSON.stringify(message));
+} catch (error) {
+  console.error('Invalid message:', error);
+}
+```
+
+### UNSUPPORTED_MESSAGE_TYPE (4000)
+
+**Cause**: Message type is not recognized or supported.
+
+**Supported Client Message Types**:
+- `session_settings`
+- `audio_input`  
+- `keep_alive`
+
+**Solutions**:
+```javascript
+const VALID_MESSAGE_TYPES = [
+  'session_settings',
+  'audio_input',
+  'keep_alive'
+];
+
+if (!VALID_MESSAGE_TYPES.includes(message.type)) {
+  throw new Error(`Unsupported message type: ${message.type}`);
+}
+```
+
+---
+
+## Troubleshooting Guide
+
+### Connection Issues
+
+1. **Check authentication credentials**
+   - Verify API key format and validity
+   - Ensure JWT tokens are not expired
+   - Confirm config_id exists
+
+2. **Verify network connectivity**
+   - Test basic internet connection
+   - Check for firewall/proxy blocking WebSockets
+   - Try connecting from different network
+
+3. **Validate parameters**
+   - Ensure all required parameters are provided
+   - Check parameter spelling and format
+   - Verify project and config ownership
+
+### Audio Issues
+
+1. **Check audio format**
+   - Verify 24kHz, 16-bit, mono PCM
+   - Test with known good audio file
+   - Validate base64 encoding
+
+2. **Monitor chunk sizes**
+   - Keep chunks under 1MB
+   - Aim for 100-200ms of audio per chunk
+   - Implement chunking for large audio
+
+3. **Handle microphone permissions**
+   - Request permissions explicitly
+   - Provide fallback for denied permissions
+   - Test on different browsers/devices
+
+### Performance Issues
+
+1. **Monitor connection health**
+   - Track message latency
+   - Monitor reconnection frequency
+   - Log connection lifecycle events
+
+2. **Implement proper error handling**
+   - Use exponential backoff for retries
+   - Don't retry authentication failures
+   - Handle all error event types
+
+3. **Optimize message flow**
+   - Batch non-critical messages
+   - Use binary audio when possible
+   - Implement client-side buffering
+
+## Getting Help
+
+### Support Channels
+
+- **Documentation**: [docs.nextevi.com](https://docs.nextevi.com)
+- **Status Page**: [status.nextevi.com](https://status.nextevi.com)  
+- **Support Email**: [support@nextevi.com](mailto:support@nextevi.com)
+- **Discord Community**: [discord.gg/nextevi](https://discord.gg/nextevi)
+
+### Support Information
+
+When contacting support, please include:
+
+- **Error Code**: The specific error code received
+- **Connection ID**: From connection metadata
+- **Timestamp**: When the error occurred (UTC)
+- **API Key**: First 10 characters (e.g., `oak_abc123...`)
+- **Code Sample**: Minimal reproduction case
+- **Browser/Environment**: Version and environment details
+
+### Diagnostic Commands
+
+```javascript
+// Generate diagnostic information
+function generateDiagnosticInfo(error, connectionId) {
+  return {
+    timestamp: new Date().toISOString(),
+    error: {
+      code: error.code || 'UNKNOWN',
+      message: error.message,
+      type: error.type || 'UNKNOWN'
+    },
+    connection: {
+      id: connectionId,
+      readyState: ws.readyState,
+      url: ws.url
+    },
+    browser: {
+      userAgent: navigator.userAgent,
+      webSocketSupport: 'WebSocket' in window
+    },
+    // Don't include sensitive data like API keys
+  };
+}
+```

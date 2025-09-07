@@ -1,97 +1,118 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "NextEVI: Voice AI Platform"
+description: "Build intelligent voice applications with NextEVI's powerful real-time voice AI platform"
 ---
 
-## Setting up
+# NextEVI: Voice AI for Developers
 
-Get your documentation site up and running in minutes.
+**Build voice AI applications in minutes, not months.** NextEVI provides everything you need to add intelligent voice conversations to your applications with just a few lines of code.
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+```tsx
+import { useVoice } from '@nextevi/voice-react';
 
-## Make it yours
+function VoiceChat() {
+  const { connect, messages, isRecording } = useVoice();
+  
+  return (
+    <div>
+      <button onClick={() => connect({ 
+        auth: { apiKey: "oak_key", configId: "config" } 
+      })}>
+        Start Voice Chat
+      </button>
+      {messages.map(msg => <div key={msg.id}>{msg.content}</div>)}
+    </div>
+  );
+}
+```
 
-Design a docs site that looks great and empowers your users.
+## Why Choose NextEVI?
 
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="5-Minute Integration" icon="clock">
+    React SDK and WebSocket API - get voice AI running instantly
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Emotion Intelligence" icon="heart">
+    Real-time emotion detection for empathetic AI responses
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Production Ready" icon="shield">
+    Scalable infrastructure handling thousands of concurrent conversations
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Developer First" icon="code">
+    Clean APIs, TypeScript support, comprehensive documentation
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Speech-to-Speech Voice AI
 
-Everything you need to create world-class documentation.
+NextEVI's Speech-to-Speech (EVI) enables natural, full-duplex voice conversations with advanced emotion recognition, turn detection, and seamless interruption handling.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+**Key Features:**
+- **Real-time Processing**: Sub-200ms latency for natural conversations
+- **Emotion Detection**: 9 emotions with confidence scoring  
+- **Turn Detection**: Intelligent conversation flow with interruption handling
+- **Multi-platform**: React SDK and WebSocket API for any stack
+- **TypeScript**: Full type safety and IntelliSense support
 
-## Need inspiration?
+## What You Can Build
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<CardGroup cols={3}>
+  <Card title="Customer Support" icon="headset">
+    Emotion-aware support bots with escalation detection
+  </Card>
+  <Card title="Voice Tutors" icon="graduation-cap">
+    Adaptive learning with engagement tracking
+  </Card>
+  <Card title="Healthcare Assistants" icon="heart-pulse">
+    Empathetic health monitoring and wellness tracking
+  </Card>
+  <Card title="Gaming Characters" icon="gamepad">
+    Immersive NPCs with dynamic emotional responses
+  </Card>
+  <Card title="Accessibility Tools" icon="universal-access">
+    Voice-first interfaces for inclusive experiences
+  </Card>
+  <Card title="Smart Assistants" icon="robot">
+    Custom voice AI for any domain or use case
+  </Card>
+</CardGroup>
+
+## Get Started in 5 Minutes
+
+<Steps>
+  <Step title="Get API Key">
+    Sign up at [NextEVI Dashboard](https://dashboard.nextevi.com) and copy your API credentials
+  </Step>
+  <Step title="Install SDK">
+    ```bash
+    npm install @nextevi/voice-react
+    ```
+  </Step>
+  <Step title="Add Voice Chat">
+    ```tsx
+    const { connect, messages } = useVoice();
+    await connect({ auth: { apiKey: "oak_key", configId: "config" } });
+    ```
+  </Step>
+</Steps>
+
+## Choose Your Integration Path
+
+<CardGroup cols={2}>
+  <Card title="5-Minute Quickstart" icon="rocket" href="/quickstart">
+    Complete voice chat app with working code
+  </Card>
+  <Card title="Speech-to-Speech Guide" icon="microphone" href="/speech-to-speech/overview">
+    Deep dive into voice AI capabilities
+  </Card>
+  <Card title="React SDK" icon="react" href="/speech-to-speech/react-sdk/installation">
+    Comprehensive React integration guide
+  </Card>
+  <Card title="WebSocket API" icon="code" href="/speech-to-speech/websocket-api/connection">
+    Direct WebSocket integration for any platform
+  </Card>
+</CardGroup>
+
+---
+
+**Ready to build voice AI?** [Start with our 5-minute quickstart →](/quickstart)

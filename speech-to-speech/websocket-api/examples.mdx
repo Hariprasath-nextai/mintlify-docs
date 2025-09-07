@@ -1,0 +1,883 @@
+---
+title: "WebSocket Examples"
+description: "Complete working examples for NextEVI WebSocket API integration"
+---
+
+# WebSocket API Examples
+
+Complete working examples showing how to integrate NextEVI's WebSocket API in various scenarios and platforms.
+
+## Basic Voice Chat
+
+A minimal implementation for browser-based voice chat:
+
+```html
+<!DOCTYPE html>
+<html>
+<head>
+    <title>NextEVI Voice Chat</title>
+</head>
+<body>
+    <div id="status">Disconnected</div>
+    <button id="connectBtn">Connect</button>
+    <button id="recordBtn" disabled>Start Recording</button>
+    <div id="messages"></div>
+
+    <script>
+        class NextEVIChat {
+            constructor() {
+                this.ws = null;
+                this.isRecording = false;
+                this.mediaRecorder = null;
+                this.audioContext = null;
+                
+                this.connectBtn = document.getElementById('connectBtn');
+                this.recordBtn = document.getElementById('recordBtn');
+                this.status = document.getElementById('status');
+                this.messages = document.getElementById('messages');
+                
+                this.setupEventListeners();
+            }
+            
+            setupEventListeners() {
+                this.connectBtn.addEventListener('click', () => this.connect());
+                this.recordBtn.addEventListener('click', () => this.toggleRecording());
+            }
+            
+            connect() {
+                const connectionId = 'conn-' + Math.random().toString(36).substr(2, 9);
+                const wsUrl = `wss://api.nextevi.com/ws/voice/${connectionId}?api_key=oak_your_api_key&config_id=your_config_id`;
+                
+                this.ws = new WebSocket(wsUrl);
+                
+                this.ws.onopen = () => {
+                    this.status.textContent = 'Connected';
+                    this.connectBtn.disabled = true;
+                    this.recordBtn.disabled = false;
+                    
+                    // Configure session
+                    this.sendMessage({
+                        type: "session_settings",
+                        timestamp: Date.now() / 1000,
+                        message_id: "settings-1",
+                        data: {
+                            emotion_detection: { enabled: true },
+                            turn_detection: { enabled: true },
+                            audio: { sample_rate: 24000, channels: 1, encoding: "linear16" }
+                        }
+                    });
+                };
+                
+                this.ws.onmessage = (event) => {
+                    const message = JSON.parse(event.data);
+                    this.handleMessage(message);
+                };
+                
+                this.ws.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    this.status.textContent = 'Error';
+                };
+                
+                this.ws.onclose = () => {
+                    this.status.textContent = 'Disconnected';
+                    this.connectBtn.disabled = false;
+                    this.recordBtn.disabled = true;
+                };
+            }
+            
+            sendMessage(message) {
+                if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                    this.ws.send(JSON.stringify(message));
+                }
+            }
+            
+            handleMessage(message) {
+                switch (message.type) {
+                    case 'connection_metadata':
+                        console.log('Connection established:', message);
+                        break;
+                        
+                    case 'transcription':
+                        if (message.data.is_final) {
+                            this.addMessage('User', message.data.transcript);
+                        }
+                        break;
+                        
+                    case 'llm_response_chunk':
+                        if (message.data.is_final) {
+                            this.addMessage('AI', message.data.content);
+                        }
+                        break;
+                        
+                    case 'tts_chunk':
+                        this.playAudio(message.content);
+                        break;
+                        
+                    case 'emotion_update':
+                        console.log('Emotions detected:', message.data.top_emotions);
+                        break;
+                        
+                    case 'error':
+                        console.error('Server error:', message.data);
+                        break;
+                        
+                    default:
+                        console.log('Unknown message:', message);
+                }
+            }
+            
+            addMessage(sender, content) {
+                const messageDiv = document.createElement('div');
+                messageDiv.innerHTML = `<strong>${sender}:</strong> ${content}`;
+                this.messages.appendChild(messageDiv);
+                this.messages.scrollTop = this.messages.scrollHeight;
+            }
+            
+            async toggleRecording() {
+                if (!this.isRecording) {
+                    await this.startRecording();
+                } else {
+                    this.stopRecording();
+                }
+            }
+            
+            async startRecording() {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: { 
+                            sampleRate: 24000,
+                            channelCount: 1,
+                            echoCancellation: true,
+                            noiseSuppression: true
+                        } 
+                    });
+                    
+                    this.audioContext = new AudioContext({ sampleRate: 24000 });
+                    const source = this.audioContext.createMediaStreamSource(stream);
+                    const processor = this.audioContext.createScriptProcessor(4096, 1, 1);
+                    
+                    processor.onaudioprocess = (event) => {
+                        const inputBuffer = event.inputBuffer;
+                        const inputData = inputBuffer.getChannelData(0);
+                        
+                        // Convert float32 to int16
+                        const int16Array = new Int16Array(inputData.length);
+                        for (let i = 0; i < inputData.length; i++) {
+                            int16Array[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+                        }
+                        
+                        // Send as binary data
+                        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                            this.ws.send(int16Array.buffer);
+                        }
+                    };
+                    
+                    source.connect(processor);
+                    processor.connect(this.audioContext.destination);
+                    
+                    this.isRecording = true;
+                    this.recordBtn.textContent = 'Stop Recording';
+                    this.status.textContent = 'Recording...';
+                    
+                } catch (error) {
+                    console.error('Error starting recording:', error);
+                    this.status.textContent = 'Microphone access denied';
+                }
+            }
+            
+            stopRecording() {
+                if (this.audioContext) {
+                    this.audioContext.close();
+                    this.audioContext = null;
+                }
+                
+                this.isRecording = false;
+                this.recordBtn.textContent = 'Start Recording';
+                this.status.textContent = 'Connected';
+            }
+            
+            playAudio(base64Audio) {
+                try {
+                    const audioData = atob(base64Audio);
+                    const arrayBuffer = new ArrayBuffer(audioData.length);
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    
+                    for (let i = 0; i < audioData.length; i++) {
+                        uint8Array[i] = audioData.charCodeAt(i);
+                    }
+                    
+                    const audioBlob = new Blob([arrayBuffer], { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    const audio = new Audio(audioUrl);
+                    
+                    audio.play().catch(console.error);
+                    
+                } catch (error) {
+                    console.error('Error playing audio:', error);
+                }
+            }
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new NextEVIChat();
+        });
+    </script>
+</body>
+</html>
+```
+
+## Node.js Server Integration
+
+Server-side integration example with proper error handling:
+
+```javascript
+const WebSocket = require('ws');
+const fs = require('fs');
+const { v4: uuidv4 } = require('uuid');
+
+class NextEVIServer {
+    constructor(apiKey, configId) {
+        this.apiKey = apiKey;
+        this.configId = configId;
+        this.ws = null;
+        this.connectionId = `conn-${uuidv4()}`;
+    }
+    
+    async connect() {
+        return new Promise((resolve, reject) => {
+            const wsUrl = `wss://api.nextevi.com/ws/voice/${this.connectionId}?api_key=${this.apiKey}&config_id=${this.configId}`;
+            
+            this.ws = new WebSocket(wsUrl);
+            
+            this.ws.on('open', () => {
+                console.log('Connected to NextEVI');
+                
+                // Configure session
+                this.sendMessage({
+                    type: "session_settings",
+                    timestamp: Date.now() / 1000,
+                    message_id: uuidv4(),
+                    data: {
+                        emotion_detection: { enabled: true },
+                        turn_detection: { enabled: true },
+                        audio: { sample_rate: 24000, channels: 1, encoding: "linear16" }
+                    }
+                });
+                
+                resolve();
+            });
+            
+            this.ws.on('message', (data) => {
+                try {
+                    const message = JSON.parse(data);
+                    this.handleMessage(message);
+                } catch (error) {
+                    console.error('Error parsing message:', error);
+                }
+            });
+            
+            this.ws.on('error', (error) => {
+                console.error('WebSocket error:', error);
+                reject(error);
+            });
+            
+            this.ws.on('close', (code, reason) => {
+                console.log(`Connection closed: ${code} ${reason}`);
+            });
+        });
+    }
+    
+    sendMessage(message) {
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            this.ws.send(JSON.stringify(message));
+        }
+    }
+    
+    sendAudioFile(filePath) {
+        const audioData = fs.readFileSync(filePath);
+        const base64Audio = audioData.toString('base64');
+        
+        this.sendMessage({
+            type: "audio_input",
+            timestamp: Date.now() / 1000,
+            message_id: uuidv4(),
+            data: {
+                audio: base64Audio,
+                chunk_id: `chunk-${Date.now()}`
+            }
+        });
+    }
+    
+    handleMessage(message) {
+        switch (message.type) {
+            case 'connection_metadata':
+                console.log('Connection established:', message.data.connection_id);
+                break;
+                
+            case 'transcription':
+                if (message.data.is_final) {
+                    console.log('Transcription:', message.data.transcript);
+                    
+                    // Log emotions if detected
+                    if (message.data.emotions) {
+                        console.log('Emotions:', message.data.emotions);
+                    }
+                }
+                break;
+                
+            case 'llm_response_chunk':
+                process.stdout.write(message.data.content);
+                if (message.data.is_final) {
+                    console.log('\n--- Response complete ---');
+                }
+                break;
+                
+            case 'tts_chunk':
+                // Save audio to file
+                this.saveAudioChunk(message.content);
+                break;
+                
+            case 'emotion_update':
+                console.log('Top emotions:', message.data.top_emotions);
+                break;
+                
+            case 'error':
+                console.error('Server error:', message.data);
+                break;
+                
+            default:
+                console.log('Unknown message type:', message.type);
+        }
+    }
+    
+    saveAudioChunk(base64Audio) {
+        const audioData = Buffer.from(base64Audio, 'base64');
+        const fileName = `audio_chunk_${Date.now()}.wav`;
+        
+        fs.writeFileSync(fileName, audioData);
+        console.log(`Audio saved to ${fileName}`);
+    }
+    
+    disconnect() {
+        if (this.ws) {
+            this.ws.close();
+        }
+    }
+}
+
+// Usage example
+async function main() {
+    const nextevi = new NextEVIServer('oak_your_api_key', 'your_config_id');
+    
+    try {
+        await nextevi.connect();
+        
+        // Send an audio file for processing
+        nextevi.sendAudioFile('./sample_audio.wav');
+        
+        // Keep connection alive for responses
+        setTimeout(() => {
+            nextevi.disconnect();
+        }, 30000);
+        
+    } catch (error) {
+        console.error('Failed to connect:', error);
+    }
+}
+
+main();
+```
+
+## Python AsyncIO Implementation
+
+Asynchronous Python client with streaming audio:
+
+```python
+import asyncio
+import websockets
+import json
+import base64
+import time
+import uuid
+import wave
+import pyaudio
+
+class NextEVIPythonClient:
+    def __init__(self, api_key, config_id):
+        self.api_key = api_key
+        self.config_id = config_id
+        self.connection_id = f"conn-{uuid.uuid4()}"
+        self.ws = None
+        self.audio = None
+        self.stream = None
+        
+    async def connect(self):
+        """Connect to NextEVI WebSocket"""
+        uri = f"wss://api.nextevi.com/ws/voice/{self.connection_id}?api_key={self.api_key}&config_id={self.config_id}"
+        
+        self.ws = await websockets.connect(uri)
+        
+        # Configure session
+        await self.send_message({
+            "type": "session_settings",
+            "timestamp": time.time(),
+            "message_id": str(uuid.uuid4()),
+            "data": {
+                "emotion_detection": {"enabled": True},
+                "turn_detection": {"enabled": True},
+                "audio": {"sample_rate": 24000, "channels": 1, "encoding": "linear16"}
+            }
+        })
+        
+        print("Connected to NextEVI")
+        
+    async def send_message(self, message):
+        """Send JSON message to server"""
+        if self.ws:
+            await self.ws.send(json.dumps(message))
+    
+    async def send_audio_file(self, file_path):
+        """Send audio file to server"""
+        with wave.open(file_path, 'rb') as wav_file:
+            frames = wav_file.readframes(wav_file.getnframes())
+            audio_b64 = base64.b64encode(frames).decode('utf-8')
+            
+            await self.send_message({
+                "type": "audio_input",
+                "timestamp": time.time(),
+                "message_id": str(uuid.uuid4()),
+                "data": {
+                    "audio": audio_b64,
+                    "chunk_id": f"chunk-{time.time()}"
+                }
+            })
+    
+    async def start_microphone_streaming(self):
+        """Start streaming from microphone"""
+        self.audio = pyaudio.PyAudio()
+        
+        self.stream = self.audio.open(
+            format=pyaudio.paInt16,
+            channels=1,
+            rate=24000,
+            input=True,
+            frames_per_buffer=4096
+        )
+        
+        print("Started microphone streaming")
+        
+        while True:
+            try:
+                # Read audio data
+                audio_data = self.stream.read(4096, exception_on_overflow=False)
+                audio_b64 = base64.b64encode(audio_data).decode('utf-8')
+                
+                # Send audio chunk
+                await self.send_message({
+                    "type": "audio_input",
+                    "timestamp": time.time(),
+                    "message_id": str(uuid.uuid4()),
+                    "data": {
+                        "audio": audio_b64,
+                        "chunk_id": f"chunk-{time.time()}"
+                    }
+                })
+                
+                # Small delay to prevent overwhelming the server
+                await asyncio.sleep(0.1)
+                
+            except Exception as e:
+                print(f"Error streaming audio: {e}")
+                break
+    
+    async def listen_for_messages(self):
+        """Listen for incoming messages"""
+        try:
+            async for message in self.ws:
+                try:
+                    data = json.loads(message)
+                    await self.handle_message(data)
+                except json.JSONDecodeError:
+                    print(f"Failed to parse message: {message}")
+                    
+        except websockets.exceptions.ConnectionClosed:
+            print("Connection closed by server")
+        except Exception as e:
+            print(f"Error listening for messages: {e}")
+    
+    async def handle_message(self, message):
+        """Handle incoming messages"""
+        msg_type = message.get('type')
+        data = message.get('data', {})
+        
+        if msg_type == 'connection_metadata':
+            print(f"Connection established: {data.get('connection_id')}")
+            
+        elif msg_type == 'transcription':
+            if data.get('is_final'):
+                transcript = data.get('transcript')
+                confidence = data.get('confidence', 0)
+                print(f"Transcription: {transcript} (confidence: {confidence:.2f})")
+                
+        elif msg_type == 'llm_response_chunk':
+            content = data.get('content', '')
+            is_final = data.get('is_final', False)
+            
+            print(content, end='', flush=True)
+            if is_final:
+                print("\n--- Response complete ---")
+                
+        elif msg_type == 'tts_chunk':
+            # Save audio chunk
+            audio_b64 = message.get('content', '')
+            if audio_b64:
+                audio_data = base64.b64decode(audio_b64)
+                filename = f"tts_chunk_{time.time()}.wav"
+                
+                with open(filename, 'wb') as f:
+                    f.write(audio_data)
+                print(f"Saved audio chunk: {filename}")
+                
+        elif msg_type == 'emotion_update':
+            top_emotions = data.get('top_emotions', [])
+            if top_emotions:
+                emotion_str = ", ".join([f"{e['name']}: {e['score']:.2f}" for e in top_emotions])
+                print(f"Emotions detected: {emotion_str}")
+                
+        elif msg_type == 'error':
+            print(f"Server error: {data}")
+            
+        else:
+            print(f"Unknown message type: {msg_type}")
+    
+    async def run_conversation(self, audio_file=None):
+        """Run a conversation session"""
+        await self.connect()
+        
+        # Start message listener
+        listen_task = asyncio.create_task(self.listen_for_messages())
+        
+        if audio_file:
+            # Send audio file
+            await asyncio.sleep(1)  # Wait for connection to stabilize
+            await self.send_audio_file(audio_file)
+            
+            # Wait for processing
+            await asyncio.sleep(10)
+        else:
+            # Start microphone streaming
+            stream_task = asyncio.create_task(self.start_microphone_streaming())
+            
+            try:
+                # Run both tasks concurrently
+                await asyncio.gather(listen_task, stream_task)
+            except KeyboardInterrupt:
+                print("\nStopping conversation...")
+                stream_task.cancel()
+        
+        listen_task.cancel()
+        await self.disconnect()
+    
+    async def disconnect(self):
+        """Clean up resources"""
+        if self.stream:
+            self.stream.stop_stream()
+            self.stream.close()
+        
+        if self.audio:
+            self.audio.terminate()
+        
+        if self.ws:
+            await self.ws.close()
+        
+        print("Disconnected from NextEVI")
+
+# Usage examples
+async def main():
+    client = NextEVIPythonClient('oak_your_api_key', 'your_config_id')
+    
+    # Option 1: Send audio file
+    # await client.run_conversation('sample_audio.wav')
+    
+    # Option 2: Stream from microphone
+    await client.run_conversation()
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+## React Integration (Custom Hook)
+
+For React applications not using the official SDK:
+
+```tsx
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+
+interface Message {
+  id: string;
+  type: 'user' | 'assistant';
+  content: string;
+  timestamp: Date;
+  emotions?: Array<{ name: string; score: number }>;
+}
+
+interface UseNextEVIOptions {
+  apiKey: string;
+  configId: string;
+  projectId?: string;
+}
+
+export function useNextEVI({ apiKey, configId, projectId }: UseNextEVIOptions) {
+  const [isConnected, setIsConnected] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [currentEmotion, setCurrentEmotion] = useState<string | null>(null);
+  
+  const wsRef = useRef<WebSocket | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  
+  const connect = useCallback(async () => {
+    const connectionId = `conn-${Math.random().toString(36).substr(2, 9)}`;
+    const wsUrl = `wss://api.nextevi.com/ws/voice/${connectionId}?api_key=${apiKey}&config_id=${configId}${projectId ? `&project_id=${projectId}` : ''}`;
+    
+    const ws = new WebSocket(wsUrl);
+    
+    ws.onopen = () => {
+      setIsConnected(true);
+      
+      // Configure session
+      ws.send(JSON.stringify({
+        type: "session_settings",
+        timestamp: Date.now() / 1000,
+        message_id: `settings-${Date.now()}`,
+        data: {
+          emotion_detection: { enabled: true },
+          turn_detection: { enabled: true },
+          audio: { sample_rate: 24000, channels: 1, encoding: "linear16" }
+        }
+      }));
+    };
+    
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data);
+      handleMessage(message);
+    };
+    
+    ws.onclose = () => {
+      setIsConnected(false);
+      setIsRecording(false);
+    };
+    
+    ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      setIsConnected(false);
+    };
+    
+    wsRef.current = ws;
+  }, [apiKey, configId, projectId]);
+  
+  const handleMessage = (message: any) => {
+    switch (message.type) {
+      case 'transcription':
+        if (message.data.is_final) {
+          setMessages(prev => [...prev, {
+            id: `msg-${Date.now()}`,
+            type: 'user',
+            content: message.data.transcript,
+            timestamp: new Date()
+          }]);
+        }
+        break;
+        
+      case 'llm_response_chunk':
+        if (message.data.is_final) {
+          setMessages(prev => [...prev, {
+            id: `msg-${Date.now()}`,
+            type: 'assistant',
+            content: message.data.content,
+            timestamp: new Date()
+          }]);
+        }
+        break;
+        
+      case 'tts_chunk':
+        playAudio(message.content);
+        break;
+        
+      case 'emotion_update':
+        const topEmotion = message.data.top_emotions?.[0];
+        if (topEmotion) {
+          setCurrentEmotion(topEmotion.name);
+        }
+        break;
+    }
+  };
+  
+  const playAudio = (base64Audio: string) => {
+    try {
+      const audioData = atob(base64Audio);
+      const arrayBuffer = new ArrayBuffer(audioData.length);
+      const uint8Array = new Uint8Array(arrayBuffer);
+      
+      for (let i = 0; i < audioData.length; i++) {
+        uint8Array[i] = audioData.charCodeAt(i);
+      }
+      
+      const audioBlob = new Blob([arrayBuffer], { type: 'audio/wav' });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      
+      audio.play().catch(console.error);
+    } catch (error) {
+      console.error('Error playing audio:', error);
+    }
+  };
+  
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: { 
+          sampleRate: 24000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true
+        } 
+      });
+      
+      audioContextRef.current = new AudioContext({ sampleRate: 24000 });
+      const source = audioContextRef.current.createMediaStreamSource(stream);
+      const processor = audioContextRef.current.createScriptProcessor(4096, 1, 1);
+      
+      processor.onaudioprocess = (event) => {
+        const inputBuffer = event.inputBuffer;
+        const inputData = inputBuffer.getChannelData(0);
+        
+        // Convert float32 to int16
+        const int16Array = new Int16Array(inputData.length);
+        for (let i = 0; i < inputData.length; i++) {
+          int16Array[i] = Math.max(-32768, Math.min(32767, inputData[i] * 32768));
+        }
+        
+        // Send as binary data
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          wsRef.current.send(int16Array.buffer);
+        }
+      };
+      
+      source.connect(processor);
+      processor.connect(audioContextRef.current.destination);
+      
+      setIsRecording(true);
+    } catch (error) {
+      console.error('Error starting recording:', error);
+    }
+  };
+  
+  const stopRecording = () => {
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+    setIsRecording(false);
+  };
+  
+  const disconnect = () => {
+    stopRecording();
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+  };
+  
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      disconnect();
+    };
+  }, []);
+  
+  return {
+    isConnected,
+    isRecording,
+    messages,
+    currentEmotion,
+    connect,
+    disconnect,
+    startRecording,
+    stopRecording
+  };
+}
+
+// Usage component
+export function VoiceChat() {
+  const { 
+    isConnected, 
+    isRecording, 
+    messages, 
+    currentEmotion,
+    connect, 
+    disconnect, 
+    startRecording, 
+    stopRecording 
+  } = useNextEVI({
+    apiKey: 'oak_your_api_key',
+    configId: 'your_config_id'
+  });
+  
+  return (
+    <div style={{ padding: '20px', maxWidth: '600px' }}>
+      <div style={{ marginBottom: '20px' }}>
+        <button 
+          onClick={isConnected ? disconnect : connect}
+          disabled={false}
+        >
+          {isConnected ? 'Disconnect' : 'Connect'}
+        </button>
+        
+        <button 
+          onClick={isRecording ? stopRecording : startRecording}
+          disabled={!isConnected}
+          style={{ marginLeft: '10px' }}
+        >
+          {isRecording ? 'Stop Recording' : 'Start Recording'}
+        </button>
+        
+        <div style={{ marginTop: '10px' }}>
+          Status: {isConnected ? 'Connected' : 'Disconnected'}
+          {isRecording && ' (Recording)'}
+          {currentEmotion && ` - ${currentEmotion} detected`}
+        </div>
+      </div>
+      
+      <div style={{ 
+        border: '1px solid #ccc', 
+        padding: '10px', 
+        height: '300px', 
+        overflowY: 'scroll' 
+      }}>
+        {messages.map(message => (
+          <div key={message.id} style={{ marginBottom: '10px' }}>
+            <strong>{message.type === 'user' ? 'You' : 'AI'}:</strong> {message.content}
+            <div style={{ fontSize: '12px', color: '#666' }}>
+              {message.timestamp.toLocaleTimeString()}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Message Protocol" icon="comments" href="/speech-to-speech/websocket-api/protocol">
+    Understand the complete message format
+  </Card>
+  <Card title="Error Handling" icon="exclamation-triangle" href="/api-reference/errors">
+    Learn about error codes and troubleshooting
+  </Card>
+</CardGroup>

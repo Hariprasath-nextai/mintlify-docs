@@ -63,7 +63,7 @@ function VoiceChat() {
       await connect({
         auth: {
           apiKey: process.env.REACT_APP_NEXTEVI_API_KEY || "oak_your_api_key_here",
-          projectId: process.env.REACT_APP_NEXTEVI_PROJECT_ID || "your-project-id",
+          projectId: process.env.REACT_APP_NEXTEVI_PROJECT_ID || "your_project_id",
           configId: process.env.REACT_APP_NEXTEVI_CONFIG_ID || "your-config-id"
         },
         audioConfig: {
@@ -553,7 +553,7 @@ const handleConnect = async () => {
     await connect({
       auth: {
         apiKey: "oak_your_api_key",
-        projectId: "your-project-id", 
+        projectId: "your_project_id", 
         configId: "your-config-id"
       },
       audioConfig: {

@@ -10,7 +10,7 @@ Establish a WebSocket connection for real-time voice conversations with NextEVI'
 ### Endpoint
 
 ```
-wss://api.nextevi.com/voice/websocket/{connection_id}
+wss://api.nextevi.com/ws/voice/{connection_id}
 ```
 
 <ParamField path="connection_id" type="string" required>
@@ -32,7 +32,7 @@ NextEVI supports two authentication methods:
     Pass your organization API key as a query parameter:
     
     ```
-    wss://api.nextevi.com/voice/websocket/{connection_id}?api_key=oak_your_api_key&config_id=your_config_id
+    wss://api.nextevi.com/ws/voice/{connection_id}?api_key=oak_your_api_key&config_id=your_config_id
     ```
   </Tab>
   
@@ -44,7 +44,7 @@ NextEVI supports two authentication methods:
     ```
     
     ```
-    wss://api.nextevi.com/voice/websocket/{connection_id}?config_id=your_config_id
+    wss://api.nextevi.com/ws/voice/{connection_id}?config_id=your_config_id
     ```
   </Tab>
   
@@ -52,7 +52,7 @@ NextEVI supports two authentication methods:
     Pass JWT token as query parameter (browser-compatible):
     
     ```
-    wss://api.nextevi.com/voice/websocket/{connection_id}?authorization=Bearer%20your_jwt_token&config_id=your_config_id
+    wss://api.nextevi.com/ws/voice/{connection_id}?authorization=Bearer%20your_jwt_token&config_id=your_config_id
     ```
   </Tab>
 </Tabs>
@@ -543,7 +543,7 @@ Error messages with recovery guidance and troubleshooting information.
 
 ```javascript JavaScript
 const ws = new WebSocket(
-  'wss://api.nextevi.com/voice/websocket/conn-123?' + 
+  'wss://api.nextevi.com/ws/voice/conn-123?' + 
   new URLSearchParams({
     api_key: 'oak_your_api_key',
     config_id: 'your_config_id'
@@ -590,7 +590,7 @@ import json
 import base64
 
 async def connect_to_nextevi():
-    uri = "wss://api.nextevi.com/voice/websocket/conn-123"
+    uri = "wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id"
     headers = {"Authorization": "Bearer your_jwt_token"}
     params = {"config_id": "your_config_id"}
     
@@ -632,7 +632,7 @@ curl -i -N -H "Connection: Upgrade" \
      -H "Sec-WebSocket-Version: 13" \
      -H "Sec-WebSocket-Key: $(echo -n 'test' | base64)" \
      -H "Authorization: Bearer your_jwt_token" \
-     "https://api.nextevi.com/voice/websocket/conn-123?config_id=your_config_id"
+     "wss://api.nextevi.com/ws/voice/conn-123?config_id=your_config_id"
 ```
 
 </CodeGroup>

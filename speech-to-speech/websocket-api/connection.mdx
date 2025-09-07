@@ -1,0 +1,320 @@
+---
+title: "WebSocket Connection"
+description: "Connect to NextEVI's WebSocket API for real-time voice communication"
+---
+
+# WebSocket API Connection
+
+Connect directly to NextEVI's WebSocket API for maximum control and platform flexibility. This guide covers establishing connections, authentication, and basic message handling.
+
+## Quick Start
+
+```javascript
+const ws = new WebSocket(
+  `wss://api.nextevi.com/ws/voice/${connectionId}?api_key=oak_your_api_key&config_id=your_config_id`
+);
+
+ws.onopen = () => {
+  console.log('Connected to NextEVI');
+  
+  // Configure session
+  ws.send(JSON.stringify({
+    type: "session_settings",
+    timestamp: Date.now() / 1000,
+    message_id: "settings-1",
+    data: {
+      emotion_detection: { enabled: true },
+      turn_detection: { enabled: true, silence_threshold: 0.5 },
+      audio: { sample_rate: 24000, channels: 1, encoding: "linear16" }
+    }
+  }));
+};
+```
+
+## WebSocket URL
+
+```
+wss://api.nextevi.com/ws/voice/{connection_id}
+```
+
+<ParamField path="connection_id" type="string" required>
+  Unique connection identifier. Generate a UUID v4 for each new connection.
+</ParamField>
+
+## Authentication Methods
+
+<Tabs>
+  <Tab title="API Key (Recommended)">
+    Pass your organization API key as a query parameter:
+    
+    ```
+    wss://api.nextevi.com/ws/voice/{connection_id}?api_key=oak_your_api_key&config_id=your_config_id
+    ```
+    
+    **Required Parameters:**
+    - `api_key` - Your organization API key (starts with `oak_`)
+    - `config_id` - Voice configuration identifier
+    - `project_id` - Project identifier (optional, auto-detected from config if not provided)
+  </Tab>
+  
+  <Tab title="JWT Token (Header)">
+    Pass JWT token via Authorization header (recommended for client applications):
+    
+    ```http
+    Authorization: Bearer your_jwt_token
+    ```
+    
+    ```
+    wss://api.nextevi.com/ws/voice/{connection_id}?config_id=your_config_id
+    ```
+  </Tab>
+  
+  <Tab title="JWT Token (Query Parameter)">
+    Pass JWT token as query parameter (browser-compatible):
+    
+    ```
+    wss://api.nextevi.com/ws/voice/{connection_id}?authorization=Bearer%20your_jwt_token&config_id=your_config_id
+    ```
+  </Tab>
+</Tabs>
+
+## Connection Examples
+
+<CodeGroup>
+
+```javascript Basic Connection
+const connectionId = 'conn-' + Math.random().toString(36).substr(2, 9);
+
+const ws = new WebSocket(
+  `wss://api.nextevi.com/ws/voice/${connectionId}?api_key=oak_your_api_key&config_id=your_config_id`
+);
+
+ws.onopen = () => {
+  console.log('Connected to NextEVI');
+};
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+  console.log('Received:', message);
+};
+
+ws.onerror = (error) => {
+  console.error('WebSocket error:', error);
+};
+
+ws.onclose = (event) => {
+  console.log('Disconnected:', event.code, event.reason);
+};
+```
+
+```javascript With JWT Authentication
+const ws = new WebSocket(
+  `wss://api.nextevi.com/ws/voice/${connectionId}?authorization=Bearer%20${jwtToken}&config_id=your_config_id`
+);
+
+// Or with Authorization header (Node.js)
+const ws = new WebSocket(`wss://api.nextevi.com/ws/voice/${connectionId}?config_id=your_config_id`, {
+  headers: {
+    'Authorization': `Bearer ${jwtToken}`
+  }
+});
+```
+
+```javascript Connection Class
+class NextEVIConnection {
+  constructor(config) {
+    this.config = config;
+    this.websocket = null;
+    this.isConnected = false;
+  }
+  
+  connect() {
+    const url = `wss://api.nextevi.com/ws/voice/${this.config.connectionId}?api_key=${this.config.apiKey}&config_id=${this.config.configId}${ this.config.projectId ? '&project_id=' + this.config.projectId : ''}`;
+    
+    this.websocket = new WebSocket(url);
+    
+    this.websocket.onopen = () => {
+      this.isConnected = true;
+      this.onConnected();
+    };
+    
+    this.websocket.onmessage = (event) => {
+      this.handleMessage(JSON.parse(event.data));
+    };
+    
+    this.websocket.onerror = (error) => {
+      console.error('Connection error:', error);
+    };
+    
+    this.websocket.onclose = () => {
+      this.isConnected = false;
+      this.onDisconnected();
+    };
+  }
+  
+  send(message) {
+    if (this.isConnected) {
+      this.websocket.send(JSON.stringify(message));
+    }
+  }
+  
+  onConnected() {
+    // Configure session settings
+    this.send({
+      type: "session_settings",
+      timestamp: Date.now() / 1000,
+      message_id: "settings-1",
+      data: {
+        emotion_detection: { enabled: true },
+        turn_detection: { enabled: true },
+        audio: { sample_rate: 24000, channels: 1, encoding: "linear16" }
+      }
+    });
+  }
+  
+  handleMessage(message) {
+    switch (message.type) {
+      case 'connection_metadata':
+        console.log('Connection established:', message);
+        break;
+      case 'transcription':
+        console.log('Transcription:', message.transcript);
+        break;
+      case 'tts_chunk':
+        // Handle audio playback
+        this.playAudio(message.content);
+        break;
+      default:
+        console.log('Unknown message:', message);
+    }
+  }
+  
+  playAudio(base64Audio) {
+    // Implement audio playback logic
+    const audioBlob = this.base64ToBlob(base64Audio, 'audio/wav');
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audio = new Audio(audioUrl);
+    audio.play();
+  }
+  
+  base64ToBlob(base64, mimeType) {
+    const bytes = atob(base64);
+    const arrayBuffer = new ArrayBuffer(bytes.length);
+    const uint8Array = new Uint8Array(arrayBuffer);
+    
+    for (let i = 0; i < bytes.length; i++) {
+      uint8Array[i] = bytes.charCodeAt(i);
+    }
+    
+    return new Blob([arrayBuffer], { type: mimeType });
+  }
+}
+
+// Usage
+const nextevi = new NextEVIConnection({
+  connectionId: 'conn-123',
+  apiKey: 'oak_your_api_key',
+  configId: 'your_config_id'
+});
+
+nextevi.connect();
+```
+
+</CodeGroup>
+
+## Platform-Specific Examples
+
+<Tabs>
+  <Tab title="Browser">
+    ```javascript
+    const ws = new WebSocket('wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id');
+    
+    // With reconnection library
+    import ReconnectingWebSocket from 'reconnecting-websocket';
+    const ws = new ReconnectingWebSocket('wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id');
+    ```
+  </Tab>
+  
+  <Tab title="Node.js">
+    ```javascript
+    const WebSocket = require('ws');
+    
+    const ws = new WebSocket('wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id');
+    ```
+  </Tab>
+  
+  <Tab title="Python">
+    ```python
+    import websockets
+    import asyncio
+    import json
+    
+    async def connect():
+        uri = "wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id"
+        
+        async with websockets.connect(uri) as websocket:
+            # Send session settings
+            await websocket.send(json.dumps({
+                "type": "session_settings",
+                "timestamp": time.time(),
+                "message_id": "settings-1",
+                "data": {
+                    "emotion_detection": {"enabled": True},
+                    "audio": {"sample_rate": 24000, "channels": 1, "encoding": "linear16"}
+                }
+            }))
+            
+            # Listen for messages
+            async for message in websocket:
+                data = json.loads(message)
+                print(f"Received: {data}")
+    
+    asyncio.run(connect())
+    ```
+  </Tab>
+  
+  <Tab title="cURL (Testing)">
+    ```bash
+    # Test WebSocket connection with cURL
+    curl -i -N -H "Connection: Upgrade" \
+         -H "Upgrade: websocket" \
+         -H "Sec-WebSocket-Version: 13" \
+         -H "Sec-WebSocket-Key: $(echo -n 'test' | base64)" \
+         -H "Authorization: Bearer your_jwt_token" \
+         "wss://api.nextevi.com/ws/voice/conn-123?config_id=your_config_id"
+    ```
+  </Tab>
+</Tabs>
+
+## Connection Flow
+
+1. **WebSocket Handshake**: Client initiates WebSocket connection
+2. **Authentication**: Server validates API key or JWT token
+3. **Connection Metadata**: Server sends connection details
+4. **Session Settings**: Client configures audio and feature settings
+5. **Ready**: Connection ready for voice communication
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="Message Protocol" icon="comments" href="/speech-to-speech/websocket-api/protocol">
+    Learn the complete WebSocket message format
+  </Card>
+  <Card title="Audio Handling" icon="volume" href="/speech-to-speech/websocket-api/examples">
+    See examples of sending and receiving audio
+  </Card>
+</CardGroup>
+
+## Troubleshooting
+
+### Connection Issues
+- Ensure your API key starts with `oak_`
+- Verify your config_id is valid
+- Check network connectivity and firewall settings
+
+### Authentication Errors  
+- Double-check API key format and permissions
+- Ensure JWT token is properly formatted and not expired
+- Verify project_id matches your configuration
+
+See [Error Reference](/api-reference/errors) for complete error codes and solutions.

@@ -1,0 +1,490 @@
+---
+title: "Authentication"
+description: "Secure authentication methods for NextEVI Speech-to-Speech API"
+---
+
+# Authentication
+
+NextEVI supports multiple authentication methods for different use cases. Choose the method that best fits your application architecture and security requirements.
+
+## Authentication Methods
+
+<CardGroup cols={2}>
+  <Card title="API Key" icon="key">
+    **Recommended for server-side applications**
+    
+    Simple and secure for backend services and development
+  </Card>
+  <Card title="JWT Token" icon="shield">
+    **Recommended for client applications**
+    
+    Secure user sessions with fine-grained permissions
+  </Card>
+</CardGroup>
+
+## API Key Authentication
+
+### Getting Your API Key
+
+1. Sign up at [NextEVI Dashboard](https://dashboard.nextevi.com)
+2. Create a new project
+3. Generate an API key from the project settings
+4. Copy your API key (starts with `oak_`)
+
+### Using API Keys
+
+API keys are passed as query parameters in the WebSocket URL:
+
+```javascript
+const ws = new WebSocket(
+  `wss://api.nextevi.com/ws/voice/${connectionId}?api_key=oak_your_api_key&config_id=your_config_id`
+);
+```
+
+<CodeGroup>
+
+```javascript React SDK
+import { useVoice } from '@nextevi/voice-react';
+
+function VoiceChat() {
+  const { connect } = useVoice();
+  
+  const handleConnect = async () => {
+    await connect({
+      auth: {
+        apiKey: "oak_your_api_key",
+        configId: "your_config_id",
+        projectId: "your_project_id" // Optional
+      }
+    });
+  };
+  
+  return <button onClick={handleConnect}>Connect</button>;
+}
+```
+
+```javascript WebSocket Direct
+const connectionId = 'conn-' + Math.random().toString(36).substr(2, 9);
+const apiKey = 'oak_your_api_key';
+const configId = 'your_config_id';
+
+const ws = new WebSocket(
+  `wss://api.nextevi.com/ws/voice/${connectionId}?api_key=${apiKey}&config_id=${configId}`
+);
+```
+
+```python Python
+import websockets
+
+api_key = "oak_your_api_key"
+config_id = "your_config_id"
+connection_id = "conn-123"
+
+uri = f"wss://api.nextevi.com/ws/voice/{connection_id}?api_key={api_key}&config_id={config_id}"
+
+async with websockets.connect(uri) as websocket:
+    # Connected with API key authentication
+    pass
+```
+
+</CodeGroup>
+
+### API Key Security
+
+<Warning>
+**Never expose API keys in client-side code**
+
+API keys provide full access to your account and should only be used in secure server environments.
+</Warning>
+
+**Best Practices:**
+- Store API keys in environment variables
+- Use different keys for development and production
+- Rotate keys regularly
+- Monitor usage in the NextEVI dashboard
+
+```bash
+# Environment variables
+NEXTEVI_API_KEY=oak_your_api_key
+NEXTEVI_CONFIG_ID=your_config_id
+NEXTEVI_PROJECT_ID=your_project_id
+```
+
+## JWT Token Authentication
+
+### When to Use JWT
+
+JWT tokens are ideal for:
+- Client-side applications (React, mobile apps)
+- User-specific sessions
+- Multi-tenant applications
+- Fine-grained permission control
+
+### Getting JWT Tokens
+
+JWT tokens are obtained from your backend authentication system. Contact NextEVI support to set up JWT authentication for your account.
+
+### Using JWT Tokens
+
+JWT tokens can be passed via Authorization header or query parameter:
+
+<Tabs>
+  <Tab title="Authorization Header (Recommended)">
+    ```javascript
+    const ws = new WebSocket(
+      `wss://api.nextevi.com/ws/voice/${connectionId}?config_id=your_config_id`,
+      {
+        headers: {
+          'Authorization': `Bearer ${jwtToken}`
+        }
+      }
+    );
+    ```
+  </Tab>
+  
+  <Tab title="Query Parameter (Browser Compatible)">
+    ```javascript
+    const ws = new WebSocket(
+      `wss://api.nextevi.com/ws/voice/${connectionId}?authorization=Bearer%20${jwtToken}&config_id=your_config_id`
+    );
+    ```
+  </Tab>
+</Tabs>
+
+### JWT Token Structure
+
+NextEVI JWT tokens contain the following claims:
+
+```json
+{
+  "iss": "nextevi.com",
+  "sub": "user_id_123",
+  "aud": "nextevi-api",
+  "exp": 1645123456,
+  "iat": 1645120000,
+  "permissions": ["voice:connect", "voice:stream"],
+  "project_id": "project_123",
+  "config_id": "config_abc"
+}
+```
+
+<Expandable title="JWT Claims Reference">
+  <ParamField body="iss" type="string">
+    Token issuer (always "nextevi.com")
+  </ParamField>
+  
+  <ParamField body="sub" type="string">
+    Subject - unique user identifier
+  </ParamField>
+  
+  <ParamField body="aud" type="string">
+    Audience (always "nextevi-api")
+  </ParamField>
+  
+  <ParamField body="exp" type="number">
+    Expiration time (Unix timestamp)
+  </ParamField>
+  
+  <ParamField body="iat" type="number">
+    Issued at time (Unix timestamp)
+  </ParamField>
+  
+  <ParamField body="permissions" type="array">
+    List of granted permissions
+  </ParamField>
+  
+  <ParamField body="project_id" type="string">
+    Associated project identifier
+  </ParamField>
+  
+  <ParamField body="config_id" type="string">
+    Voice configuration identifier
+  </ParamField>
+</Expandable>
+
+## Environment Setup
+
+### Development Environment
+
+Create a `.env` file for local development:
+
+```bash
+# .env
+NEXTEVI_API_KEY=oak_dev_your_api_key
+NEXTEVI_CONFIG_ID=dev_config_id
+NEXTEVI_PROJECT_ID=dev_project_id
+NEXTEVI_BASE_URL=wss://api.nextevi.com/ws/voice
+```
+
+### Production Environment
+
+Set environment variables securely in your production environment:
+
+<CodeGroup>
+
+```bash Docker
+# docker-compose.yml
+version: '3'
+services:
+  app:
+    environment:
+      - NEXTEVI_API_KEY=oak_prod_your_api_key
+      - NEXTEVI_CONFIG_ID=prod_config_id
+      - NEXTEVI_PROJECT_ID=prod_project_id
+```
+
+```bash Kubernetes
+# k8s-secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: nextevi-secrets
+type: Opaque
+stringData:
+  NEXTEVI_API_KEY: oak_prod_your_api_key
+  NEXTEVI_CONFIG_ID: prod_config_id
+  NEXTEVI_PROJECT_ID: prod_project_id
+```
+
+```bash Vercel
+# Via Vercel CLI or dashboard
+vercel env add NEXTEVI_API_KEY
+vercel env add NEXTEVI_CONFIG_ID
+vercel env add NEXTEVI_PROJECT_ID
+```
+
+```bash AWS Lambda
+# Via AWS CLI or console
+aws lambda update-function-configuration \
+  --function-name myFunction \
+  --environment Variables='{
+    NEXTEVI_API_KEY=oak_prod_your_api_key,
+    NEXTEVI_CONFIG_ID=prod_config_id,
+    NEXTEVI_PROJECT_ID=prod_project_id
+  }'
+```
+
+</CodeGroup>
+
+## Configuration Management
+
+### Project and Config IDs
+
+- **Project ID**: Identifies your NextEVI project and billing account
+- **Config ID**: Specifies voice model, language, and feature settings
+
+Both are obtained from the [NextEVI Dashboard](https://dashboard.nextevi.com):
+
+1. Navigate to your project
+2. Go to "Voice Configurations"
+3. Copy the Config ID for your desired setup
+4. Project ID is shown in the project settings
+
+### Dynamic Configuration
+
+For multi-tenant applications, you can use different configs per user:
+
+```javascript
+class NextEVIManager {
+  constructor() {
+    this.connections = new Map();
+  }
+  
+  async connectUser(userId, userConfig) {
+    const connectionId = `conn-${userId}-${Date.now()}`;
+    
+    const ws = new WebSocket(
+      `wss://api.nextevi.com/ws/voice/${connectionId}?api_key=${process.env.NEXTEVI_API_KEY}&config_id=${userConfig.configId}&project_id=${userConfig.projectId}`
+    );
+    
+    this.connections.set(userId, { ws, connectionId, config: userConfig });
+    
+    return ws;
+  }
+  
+  getUserConnection(userId) {
+    return this.connections.get(userId);
+  }
+}
+```
+
+## Error Handling
+
+### Authentication Errors
+
+Common authentication error codes:
+
+<AccordionGroup>
+  <Accordion title="AUTH_REQUIRED (4001)">
+    **Cause**: No authentication provided
+    
+    **Solution**: Include either `api_key` query parameter or `Authorization` header
+    
+    ```javascript
+    // Missing authentication
+    const ws = new WebSocket(`wss://api.nextevi.com/ws/voice/${connectionId}`);
+    
+    // Fixed - with API key
+    const ws = new WebSocket(`wss://api.nextevi.com/ws/voice/${connectionId}?api_key=oak_your_key&config_id=your_config`);
+    ```
+  </Accordion>
+  
+  <Accordion title="AUTH_FAILED (4001)">
+    **Cause**: Invalid API key or expired JWT token
+    
+    **Solution**: Verify your credentials and check token expiration
+    
+    ```javascript
+    // Check API key format
+    if (!apiKey.startsWith('oak_')) {
+      throw new Error('Invalid API key format');
+    }
+    
+    // Check JWT expiration
+    const payload = JSON.parse(atob(jwtToken.split('.')[1]));
+    if (payload.exp < Date.now() / 1000) {
+      throw new Error('JWT token expired');
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="CONFIG_NOT_FOUND (4004)">
+    **Cause**: Invalid config_id provided
+    
+    **Solution**: Verify your config_id in the NextEVI dashboard
+    
+    ```javascript
+    // Validate config exists before connecting
+    const validConfigs = await fetchValidConfigs();
+    if (!validConfigs.includes(configId)) {
+      throw new Error(`Invalid config_id: ${configId}`);
+    }
+    ```
+  </Accordion>
+  
+  <Accordion title="PROJECT_ACCESS_DENIED (4003)">
+    **Cause**: API key or JWT doesn't have access to specified project
+    
+    **Solution**: Check project permissions in dashboard or regenerate credentials
+  </Accordion>
+</AccordionGroup>
+
+### Connection Retry Logic
+
+Implement robust error handling with exponential backoff:
+
+```javascript
+class AuthenticatedConnection {
+  constructor(auth) {
+    this.auth = auth;
+    this.retryCount = 0;
+    this.maxRetries = 5;
+  }
+  
+  async connect() {
+    try {
+      const ws = new WebSocket(this.buildUrl());
+      
+      ws.onopen = () => {
+        console.log('Connected successfully');
+        this.retryCount = 0; // Reset on successful connection
+      };
+      
+      ws.onerror = (error) => {
+        console.error('Connection error:', error);
+      };
+      
+      ws.onclose = (event) => {
+        if (event.code >= 4000 && event.code < 5000) {
+          // Authentication or client error - don't retry
+          console.error('Authentication failed:', event.reason);
+          return;
+        }
+        
+        // Network error - retry with backoff
+        this.scheduleRetry();
+      };
+      
+      return ws;
+      
+    } catch (error) {
+      console.error('Failed to create connection:', error);
+      this.scheduleRetry();
+    }
+  }
+  
+  scheduleRetry() {
+    if (this.retryCount >= this.maxRetries) {
+      console.error('Max retries exceeded');
+      return;
+    }
+    
+    const delay = Math.pow(2, this.retryCount) * 1000; // Exponential backoff
+    this.retryCount++;
+    
+    console.log(`Retrying connection in ${delay}ms (attempt ${this.retryCount})`);
+    
+    setTimeout(() => {
+      this.connect();
+    }, delay);
+  }
+  
+  buildUrl() {
+    const connectionId = `conn-${Math.random().toString(36).substr(2, 9)}`;
+    const baseUrl = `wss://api.nextevi.com/ws/voice/${connectionId}`;
+    
+    if (this.auth.apiKey) {
+      return `${baseUrl}?api_key=${this.auth.apiKey}&config_id=${this.auth.configId}`;
+    } else if (this.auth.jwtToken) {
+      return `${baseUrl}?authorization=Bearer%20${this.auth.jwtToken}&config_id=${this.auth.configId}`;
+    }
+    
+    throw new Error('No authentication method provided');
+  }
+}
+
+// Usage
+const connection = new AuthenticatedConnection({
+  apiKey: 'oak_your_api_key',
+  configId: 'your_config_id'
+});
+
+await connection.connect();
+```
+
+## Security Best Practices
+
+### API Key Security
+- ✅ Store in environment variables, never in code
+- ✅ Use different keys for dev/staging/production
+- ✅ Rotate keys regularly (quarterly recommended)
+- ✅ Monitor usage and set up alerts
+- ❌ Never commit keys to version control
+- ❌ Never expose keys in client-side JavaScript
+
+### JWT Token Security
+- ✅ Use short expiration times (15-60 minutes)
+- ✅ Implement proper token refresh flow
+- ✅ Validate tokens server-side before use
+- ✅ Use secure HTTP-only cookies when possible
+- ❌ Never store tokens in localStorage
+- ❌ Don't include sensitive data in tokens
+
+### Connection Security
+- ✅ Always use WSS (secure WebSocket)
+- ✅ Implement connection timeout limits
+- ✅ Validate all configuration parameters
+- ✅ Log authentication events for monitoring
+- ❌ Don't retry forever on auth failures
+- ❌ Never log credentials in error messages
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="WebSocket Connection" icon="plug" href="/speech-to-speech/websocket-api/connection">
+    Learn how to establish WebSocket connections
+  </Card>
+  <Card title="React SDK Setup" icon="react" href="/speech-to-speech/react-sdk/installation">
+    Get started with the React SDK
+  </Card>
+</CardGroup>

@@ -21,7 +21,7 @@ function SimpleVoiceChat() {
       <button onClick={() => connect({
         auth: {
           apiKey: "oak_your_api_key",
-          projectId: "your-project-id", 
+          projectId: "your_project_id", 
           configId: "your-config-id"
         }
       })}>
@@ -56,7 +56,7 @@ Direct WebSocket implementation:
 
 ```javascript
 const voice = new WebSocket(
-  `wss://api.nextevi.com/voice/websocket/conn-123?api_key=oak_your_key&config_id=your_config`
+  `wss://api.nextevi.com/ws/voice/conn-123?api_key=oak_your_api_key&config_id=your_config_id`
 );
 
 voice.onopen = () => {
@@ -556,7 +556,7 @@ function HealthcareVoiceAssistant() {
 ```javascript
 // .env.local
 NEXTEVI_API_KEY=oak_your_api_key
-NEXTEVI_PROJECT_ID=your-project-id
+NEXTEVI_PROJECT_ID=your_project_id
 NEXTEVI_CONFIG_ID=your-config-id
 
 // config.js

@@ -102,7 +102,7 @@ function VoiceChat() {
       await connect({
         auth: {
           apiKey: "oak_your_api_key_here",
-          projectId: "your-project-id", 
+          projectId: "your_project_id", 
           configId: "your-config-id"
         }
       });
@@ -201,7 +201,7 @@ export default VoiceChat;
 
 ```bash .env.local
 NEXTEVI_API_KEY=oak_your_api_key
-NEXTEVI_PROJECT_ID=your-project-id
+NEXTEVI_PROJECT_ID=your_project_id
 NEXTEVI_CONFIG_ID=your-config-id
 NEXTEVI_DEBUG=true
 ```
@@ -246,7 +246,7 @@ const { connect } = useVoice();
 await connect({
   auth: {
     apiKey: "oak_your_api_key",
-    projectId: "your-project-id",
+    projectId: "your_project_id",
     configId: "your-config-id"
   }
 });
@@ -267,7 +267,7 @@ await connect({
   auth: {
     accessToken: "your_jwt_token",
     configId: "your-config-id",
-    projectId: "your-project-id" // optional
+    projectId: "your_project_id" // optional
   }
 });
 ```
@@ -286,7 +286,7 @@ Customize audio processing settings:
 await connect({
   auth: {
     apiKey: "oak_your_api_key",
-    projectId: "your-project-id",
+    projectId: "your_project_id",
     configId: "your-config-id"
   },
   audioConfig: {
