@@ -13,41 +13,45 @@
       {
         "group": "Getting Started",
         "pages": [
-          "introduction",
-          "quickstart",
-          "authentication"
+          "index",
+          "quickstart"
         ]
       },
       {
-        "group": "Speech to Speech (EVI)",
+        "group": "Speech-to-Speech",
         "pages": [
-          "speech-to-speech/introduction",
-          "speech-to-speech/react-sdk",
-          "speech-to-speech/websocket-api",
+          "speech-to-speech/overview",
+          "speech-to-speech/authentication",
+          {
+            "group": "React SDK",
+            "pages": [
+              "speech-to-speech/react-sdk/installation",
+              "speech-to-speech/react-sdk/hooks"
+            ]
+          },
+          {
+            "group": "WebSocket API",
+            "pages": [
+              "speech-to-speech/websocket-api/connection",
+              "speech-to-speech/websocket-api/protocol",
+              "speech-to-speech/websocket-api/examples"
+            ]
+          },
+          {
+            "group": "Features",
+            "pages": [
+              "speech-to-speech/features/emotions",
+              "speech-to-speech/features/turn-detection"
+            ]
+          },
           "speech-to-speech/examples"
-        ]
-      },
-      {
-        "group": "Text-to-Speech",
-        "pages": [
-          "tts/getting-started",
-          "tts/api-reference"
         ]
       },
       {
         "group": "API Reference",
         "pages": [
-          "api-reference/introduction",
-          "api-reference/authentication",
+          "api-reference/websocket",
           "api-reference/errors"
-        ]
-      },
-      {
-        "group": "Examples & Guides",
-        "pages": [
-          "examples/quick-start",
-          "examples/integration-patterns",
-          "examples/best-practices"
         ]
       }
     ]
