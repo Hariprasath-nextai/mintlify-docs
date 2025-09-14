@@ -1,0 +1,88 @@
+---
+title: "LiveKit Integration Installation"
+description: "Install and set up NextEVI with LiveKit Agents for real-time voice applications"
+---
+
+# LiveKit Integration Installation
+
+Integrate NextEVI with LiveKit Agents to create powerful real-time voice applications that work seamlessly with LiveKit's ecosystem and playground.
+
+## Prerequisites
+
+- Python 3.9 or higher
+- NextEVI API account with API key, config ID, and project ID
+- LiveKit account with API credentials
+
+## Installation
+
+Install the NextEVI LiveKit plugin:
+
+```bash
+pip install livekit-plugins-nextevi
+```
+
+This will automatically install:
+- `livekit-agents` (>=1.2.8)
+- Required NextEVI dependencies
+- Audio processing libraries
+
+## Environment Setup
+
+Set up your environment variables for both NextEVI and LiveKit:
+
+```bash
+# NextEVI Configuration
+export NEXTEVI_API_KEY="your_nextevi_api_key"
+export NEXTEVI_CONFIG_ID="your_config_id"
+export NEXTEVI_PROJECT_ID="your_project_id"
+
+# LiveKit Configuration
+export LIVEKIT_URL="wss://your-livekit-instance.livekit.cloud"
+export LIVEKIT_API_KEY="your_livekit_api_key"
+export LIVEKIT_API_SECRET="your_livekit_api_secret"
+```
+
+<Note>
+You can get your NextEVI credentials from your [NextEVI dashboard](https://app.nextevi.com) and LiveKit credentials from your [LiveKit console](https://console.livekit.io).
+</Note>
+
+## Verify Installation
+
+Create a simple test to verify everything is working:
+
+```python
+from livekit_nextevi import NextEVIRealtimeModel
+from livekit_nextevi.nextevi_stt import NextEVISTT
+
+# Test imports
+print("✅ NextEVI LiveKit plugin installed successfully!")
+```
+
+## Next Steps
+
+<Card title="Quick Start Guide" icon="rocket" href="/speech-to-speech/livekit-integration/quickstart">
+  Get your first NextEVI agent running with LiveKit in minutes
+</Card>
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="Import Error">
+    Make sure you have Python 3.9+ and run:
+    ```bash
+    pip install --upgrade livekit-plugins-nextevi
+    ```
+  </Accordion>
+  
+  <Accordion title="Audio Issues">
+    LiveKit requires specific audio formats. The plugin handles this automatically, but ensure your system has audio drivers installed.
+  </Accordion>
+  
+  <Accordion title="Connection Problems">
+    Verify your environment variables are set correctly:
+    ```bash
+    echo $NEXTEVI_API_KEY
+    echo $LIVEKIT_URL
+    ```
+  </Accordion>
+</AccordionGroup>

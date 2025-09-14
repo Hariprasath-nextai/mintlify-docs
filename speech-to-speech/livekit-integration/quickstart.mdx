@@ -1,0 +1,239 @@
+---
+title: "LiveKit Integration Quick Start"
+description: "Build a complete NextEVI voice agent with LiveKit in minutes"
+---
+
+# LiveKit Integration Quick Start
+
+Get up and running with NextEVI and LiveKit Agents to create a real-time voice AI that works seamlessly with LiveKit's playground and ecosystem.
+
+## Overview
+
+This guide shows you how to create a NextEVI agent that:
+- Integrates with LiveKit's AgentSession for proper transcription display
+- Handles real-time audio streaming
+- Works with LiveKit playground for easy testing
+- Bridges NextEVI's transcriptions to the LiveKit interface
+
+## Complete Example
+
+Create a file called `main.py`:
+
+```python
+"""
+NextEVI Agent with AgentSession and Proper Transcription Display
+
+This agent uses LiveKit's AgentSession with custom STT to properly integrate
+NextEVI transcriptions with the playground chat interface.
+"""
+
+import asyncio
+import logging
+import os
+
+from livekit import agents, rtc
+from livekit.agents import JobContext, WorkerOptions, cli, AgentSession
+
+# Import NextEVI plugin and custom STT
+from livekit_nextevi import NextEVIRealtimeModel
+from livekit_nextevi.nextevi_stt import NextEVISTT
+
+logger = logging.getLogger(__name__)
+
+
+async def nextevi_agent_entrypoint(ctx: JobContext):
+    """NextEVI agent with AgentSession for proper playground transcription display"""
+
+    logger.info("🚀 Starting NextEVI Agent with AgentSession integration...")
+
+    # Connect to room
+    await ctx.connect()
+
+    # Create custom STT component for NextEVI transcription bridging
+    nextevi_stt = NextEVISTT()
+    logger.info("✅ NextEVISTT component created for AgentSession integration")
+
+    # Create NextEVI realtime model
+    model = NextEVIRealtimeModel(
+        api_key=os.getenv("NEXTEVI_API_KEY"),
+        config_id=os.getenv("NEXTEVI_CONFIG_ID"),
+        project_id=os.getenv("NEXTEVI_PROJECT_ID")
+    )
+
+    # Bridge NextEVI transcriptions to our custom STT
+    def on_transcription(transcript: str, is_final: bool):
+        """Forward NextEVI transcriptions to custom STT component"""
+        try:
+            nextevi_stt.forward_transcription(transcript, is_final)
+            logger.info(f"🎙️ {'Final' if is_final else 'Partial'} transcription bridged to STT: {transcript}")
+        except Exception as e:
+            logger.error(f"❌ Failed to bridge transcription to STT: {e}")
+
+    # Set transcription callback to bridge to STT
+    if hasattr(model, 'set_transcription_callback'):
+        model.set_transcription_callback(on_transcription)
+        logger.info("✅ NextEVI transcription callback bridged to custom STT")
+
+    # Create AgentSession with custom STT and NextEVI as LLM
+    session = AgentSession(
+        stt=nextevi_stt,  # Our custom STT that receives NextEVI transcriptions
+        llm=model,  # NextEVI model as LLM (handles realtime conversation)
+        # Note: VAD and TTS are handled internally by NextEVI, not separate components
+    )
+
+    logger.info("✅ AgentSession created with NextEVI STT bridge")
+
+    # Set up audio output for NextEVI TTS
+    audio_source = rtc.AudioSource(sample_rate=48000, num_channels=1)
+    track = rtc.LocalAudioTrack.create_audio_track("nextevi-voice", audio_source)
+    await ctx.room.local_participant.publish_track(track)
+
+    # Configure NextEVI model with audio source
+    model.set_audio_source(audio_source)
+    model.set_livekit_context(ctx)
+    logger.info("✅ NextEVI model configured with audio source")
+
+    # Handle incoming audio - route to NextEVI for processing
+    @ctx.room.on("track_subscribed")
+    def on_track_subscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
+        if track.kind == rtc.TrackKind.KIND_AUDIO:
+            logger.info(f"🎤 Audio track from {participant.identity}")
+
+            async def process_audio():
+                audio_stream = rtc.AudioStream(track)
+                async for event in audio_stream:
+                    if isinstance(event, rtc.AudioFrameEvent):
+                        # Send audio to NextEVI for STT + LLM + TTS processing
+                        await model.push_audio(event.frame)
+
+            asyncio.create_task(process_audio())
+
+    # Stream NextEVI TTS output to LiveKit
+    async def stream_audio_output():
+        audio_stream = model.audio_output_stream()
+        async for audio_frame in audio_stream:
+            await audio_source.capture_frame(audio_frame)
+
+    asyncio.create_task(stream_audio_output())
+
+    # AgentSession doesn't need explicit start() call - it's ready once created
+    logger.info("✅ NextEVI Agent with AgentSession ready - transcriptions will display in playground!")
+
+    # Keep running
+    await asyncio.Future()
+
+
+def main():
+    cli.run_app(
+        WorkerOptions(entrypoint_fnc=nextevi_agent_entrypoint)
+    )
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## Environment Setup
+
+Make sure your environment variables are configured:
+
+```bash
+# NextEVI Configuration
+export NEXTEVI_API_KEY="your_nextevi_api_key"
+export NEXTEVI_CONFIG_ID="your_config_id" 
+export NEXTEVI_PROJECT_ID="your_project_id"
+
+# LiveKit Configuration  
+export LIVEKIT_URL="wss://your-livekit-instance.livekit.cloud"
+export LIVEKIT_API_KEY="your_livekit_api_key"
+export LIVEKIT_API_SECRET="your_livekit_api_secret"
+```
+
+<Warning>
+Replace the placeholder values with your actual credentials from [NextEVI Dashboard](https://app.nextevi.com) and [LiveKit Console](https://console.livekit.io).
+</Warning>
+
+## Running the Agent
+
+Start your NextEVI agent:
+
+```bash
+python main.py start
+```
+
+You should see output like:
+```
+🚀 Starting NextEVI Agent with AgentSession integration...
+✅ NextEVISTT component created for AgentSession integration  
+✅ NextEVI transcription callback bridged to custom STT
+✅ AgentSession created with NextEVI STT bridge
+✅ NextEVI model configured with audio source
+✅ NextEVI Agent with AgentSession ready - transcriptions will display in playground!
+```
+
+## Testing with LiveKit Playground
+
+1. Open [LiveKit Playground](https://playground.livekit.io)
+2. Connect to your LiveKit instance
+3. Join a room where your agent is running
+4. Start speaking - you'll see:
+   - Real-time transcriptions in the chat interface
+   - NextEVI's empathetic voice responses
+   - Emotion detection and natural conversation flow
+
+## How It Works
+
+### AgentSession Integration
+- **Custom STT Component**: Bridges NextEVI's transcriptions to LiveKit's interface
+- **Transcription Display**: Shows real-time speech recognition in the playground chat
+- **Seamless Integration**: Works with existing LiveKit tools and workflows
+
+### Audio Flow
+1. **Input**: User speaks → LiveKit captures audio → Sent to NextEVI
+2. **Processing**: NextEVI handles STT, emotion detection, LLM, and TTS
+3. **Output**: NextEVI audio → Streamed back to LiveKit → User hears response
+4. **Transcription**: NextEVI transcriptions → Custom STT → Playground interface
+
+## Key Features
+
+<CardGroup cols={2}>
+  <Card title="Real-time Transcription" icon="microphone">
+    See live transcriptions in LiveKit playground interface
+  </Card>
+  <Card title="Emotion Recognition" icon="heart">
+    NextEVI's built-in emotion detection and empathetic responses  
+  </Card>
+  <Card title="Full-duplex Audio" icon="volume">
+    Natural conversation with interruption handling
+  </Card>
+  <Card title="Easy Testing" icon="play">
+    Works seamlessly with LiveKit playground for development
+  </Card>
+</CardGroup>
+
+## Next Steps
+
+- **Production Deployment**: Scale your agent using LiveKit Cloud
+- **Custom Configurations**: Modify NextEVI settings for your use case
+- **Advanced Features**: Explore [emotion detection](/speech-to-speech/features/emotions) and [turn detection](/speech-to-speech/features/turn-detection)
+- **Authentication**: Set up [secure authentication](/speech-to-speech/authentication) for production
+
+## Troubleshooting
+
+<AccordionGroup>
+  <Accordion title="No Transcriptions Showing">
+    Ensure the `on_transcription` callback is properly set and the NextEVISTT component is receiving transcriptions. Check the agent logs for STT bridge messages.
+  </Accordion>
+  
+  <Accordion title="Audio Not Working">
+    Verify that the audio source is properly configured and the LiveKit room has audio permissions. Check that the sample rate matches (48kHz).
+  </Accordion>
+  
+  <Accordion title="Environment Variable Issues">
+    Double-check all environment variables are set:
+    ```bash
+    echo $NEXTEVI_API_KEY
+    echo $LIVEKIT_URL
+    ```
+  </Accordion>
+</AccordionGroup>
