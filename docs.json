@@ -38,6 +38,13 @@
             ]
           },
           {
+            "group": "LiveKit Integration",
+            "pages": [
+              "speech-to-speech/livekit-integration/installation",
+              "speech-to-speech/livekit-integration/quickstart"
+            ]
+          },
+          {
             "group": "Features",
             "pages": [
               "speech-to-speech/features/emotions",
